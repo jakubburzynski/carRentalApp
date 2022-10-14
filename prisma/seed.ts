@@ -4,10 +4,7 @@ const prisma = new PrismaClient();
 
 async function main() {
     await prisma.unitType.createMany({
-        data: [
-            { name: "Metric" },
-            { name: "Imperial" }
-        ]
+        data: [{ name: "Metric" }, { name: "Imperial" }],
     });
 
     await prisma.fuelType.createMany({
