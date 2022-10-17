@@ -32,7 +32,7 @@ export default async function createFastifyServer(
     });
     await server.register(prismaPlugin);
 
-    server.register(rentalRoutes, { prefix: "/api/v1/rental" });
+    server.register(rentalRoutes, { prefix: "/api/v1/rentals" });
 
     server.get("/", async () => {
         return { hello: "world" };

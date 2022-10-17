@@ -11,7 +11,7 @@ import { faker } from "@faker-js/faker";
 import createFastifyServer from "../../loaders/fastify";
 import uuidRegex from "../../utils/uuidRegex.util";
 
-describe("POST /api/v1/rental", () => {
+describe("POST /api/v1/rentals", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     beforeAll(async () => {
         app = await createFastifyServer();
@@ -28,7 +28,7 @@ describe("POST /api/v1/rental", () => {
         };
         const response = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload,
         });
 
@@ -46,7 +46,7 @@ describe("POST /api/v1/rental", () => {
         };
         const firstResponse = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload: firstPayload,
         });
 
@@ -56,7 +56,7 @@ describe("POST /api/v1/rental", () => {
         };
         const secondResponse = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload: secondPayload,
         });
 
@@ -78,7 +78,7 @@ describe("POST /api/v1/rental", () => {
         };
         const response = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload,
         });
 
@@ -92,7 +92,7 @@ describe("POST /api/v1/rental", () => {
         };
         const response = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload,
         });
 
@@ -110,7 +110,7 @@ describe("POST /api/v1/rental", () => {
         };
         const response = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload,
         });
 
@@ -127,7 +127,7 @@ describe("POST /api/v1/rental", () => {
         };
         const response = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload,
         });
 
@@ -145,7 +145,7 @@ describe("POST /api/v1/rental", () => {
         };
         const response = await app.inject({
             method: "POST",
-            url: "/api/v1/rental",
+            url: "/api/v1/rentals",
             payload,
         });
 
