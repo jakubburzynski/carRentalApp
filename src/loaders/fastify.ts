@@ -17,7 +17,14 @@ declare module "fastify" {
 export default async function createFastifyServer(
     options: FastifyServerOptions = {},
 ) {
-    const server = fastify(options).withTypeProvider<TypeBoxTypeProvider>();
+    const server = fastify({
+        ...options,
+        ajv: {
+            customOptions: {
+                removeAdditional: "all",
+            },
+        },
+    }).withTypeProvider<TypeBoxTypeProvider>();
     await server.register(fastifyEnv, {
         schema: envSchema,
         dotenv: true,
