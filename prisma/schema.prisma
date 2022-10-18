@@ -33,7 +33,7 @@ enum FuelTypeEnum {
 
 model Rental {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   name String @db.VarChar(40)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -45,7 +45,7 @@ model Rental {
 
 model RentalManager {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   name String @db.VarChar(50)
   email String @db.VarChar(254)
   password String
@@ -57,21 +57,21 @@ model RentalManager {
 
 model UnitType {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   name UnitTypeEnum
   rentals Rental[]
 }
 
 model FuelType {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   name FuelTypeEnum
   vehicles Vehicle[]
 }
 
 model Vehicle {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   brand String @db.VarChar(30)
   model String @db.VarChar(50)
   year Int
@@ -94,7 +94,7 @@ model Vehicle {
 
 model VehicleEquipment {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   name String @db.VarChar(100)
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
   vehicleId Int
@@ -102,7 +102,7 @@ model VehicleEquipment {
 
 model VehicleService {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   startAt DateTime
   endAt DateTime
   createdAt DateTime @default(now())
@@ -113,7 +113,7 @@ model VehicleService {
 
 model VehiclePhoto {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   url String
   main Boolean
   createdAt DateTime @default(now())
@@ -124,7 +124,7 @@ model VehiclePhoto {
 
 model Rent {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   notes String
   status RentStatusEnum
   startAt DateTime
@@ -139,7 +139,7 @@ model Rent {
 
 model Customer {
   id Int @id @default(autoincrement())
-  uuid String @default(uuid()) @db.Uuid
+  uuid String @default(uuid()) @db.Uuid @unique
   firstName String @db.VarChar(30)
   lastName String @db.VarChar(50)
   birthDate DateTime @db.Date
