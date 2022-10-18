@@ -22,9 +22,13 @@ describe("POST /api/v1/rentals", () => {
     });
 
     test("should create a rental", async () => {
+        const unitType = await app.prisma.unitType.findFirst();
+        if (!unitType) {
+            throw new Error("No unit types found");
+        }
         const payload = {
             name: faker.company.name(),
-            unitTypeId: 1,
+            unitTypeUuid: unitType.uuid,
         };
         const response = await app.inject({
             method: "POST",
@@ -40,9 +44,13 @@ describe("POST /api/v1/rentals", () => {
     });
 
     test("should not create more than one rental", async () => {
+        const unitTypes = await app.prisma.unitType.findMany();
+        if (unitTypes.length < 2) {
+            throw new Error("Not enough unit types found");
+        }
         const firstPayload = {
             name: faker.company.name(),
-            unitTypeId: 1,
+            unitTypeUuid: unitTypes[0].uuid,
         };
         const firstResponse = await app.inject({
             method: "POST",
@@ -52,7 +60,7 @@ describe("POST /api/v1/rentals", () => {
 
         const secondPayload = {
             name: faker.company.name(),
-            unitTypeId: 2,
+            unitTypeUuid: unitTypes[1].uuid,
         };
         const secondResponse = await app.inject({
             method: "POST",
@@ -74,7 +82,7 @@ describe("POST /api/v1/rentals", () => {
     test("should not create rental with not existing unit type id", async () => {
         const payload = {
             name: faker.company.name(),
-            unitTypeId: 1867,
+            unitTypeUuid: faker.datatype.uuid(),
         };
         const response = await app.inject({
             method: "POST",
@@ -83,12 +91,12 @@ describe("POST /api/v1/rentals", () => {
         });
 
         expect(response.statusCode).toBe(409);
-        expect(response.json().message).toEqual("Invalid unit type id");
+        expect(response.json().message).toEqual("Invalid unit type uuid");
     });
 
     test("should check for missing name", async () => {
         const payload = {
-            unitTypeId: 1,
+            unitTypeUuid: faker.datatype.uuid(),
         };
         const response = await app.inject({
             method: "POST",
@@ -106,7 +114,7 @@ describe("POST /api/v1/rentals", () => {
     test("should check for name shorter than 3 char", async () => {
         const payload = {
             name: "ab",
-            unitTypeId: 1,
+            unitTypeUuid: faker.datatype.uuid(),
         };
         const response = await app.inject({
             method: "POST",
@@ -121,7 +129,7 @@ describe("POST /api/v1/rentals", () => {
         );
     });
 
-    test("should check for missing unitTypeId", async () => {
+    test("should check for missing unitTypeUuid", async () => {
         const payload = {
             name: faker.company.name(),
         };
@@ -134,14 +142,14 @@ describe("POST /api/v1/rentals", () => {
         const responseJson = response.json();
         expect(response.statusCode).toBe(400);
         expect(responseJson.message).toEqual(
-            "body must have required property 'unitTypeId'",
+            "body must have required property 'unitTypeUuid'",
         );
     });
 
-    test("should check for type of unitTypeId other than number", async () => {
+    test("should check for type of unitTypeUuid other than uuid", async () => {
         const payload = {
             name: faker.company.name(),
-            unitTypeId: "metric",
+            unitTypeUuid: 123,
         };
         const response = await app.inject({
             method: "POST",
@@ -151,7 +159,9 @@ describe("POST /api/v1/rentals", () => {
 
         const responseJson = response.json();
         expect(response.statusCode).toBe(400);
-        expect(responseJson.message).toEqual("body/unitTypeId must be number");
+        expect(responseJson.message).toEqual(
+            'body/unitTypeUuid must match format "uuid"',
+        );
     });
 
     afterAll(async () => {
