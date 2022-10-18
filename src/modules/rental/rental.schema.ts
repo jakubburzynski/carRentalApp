@@ -2,7 +2,7 @@ import { Static, Type } from "@sinclair/typebox";
 
 export const postCreateRentalBody = Type.Object({
     name: Type.String({ minLength: 3 }),
-    unitTypeId: Type.Number({ title: "Unit Type Id" }),
+    unitTypeUuid: Type.String({ format: "uuid" }),
 });
 
 export type PostCreateRentalBody = Static<typeof postCreateRentalBody>;
