@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import envSchema, { EnvSchema } from "./env";
 import rentalRoutes from "../modules/rental/rental.route";
 import prismaPlugin from "./prisma";
+import unitTypeRoutes from "../modules/unitType/unitType.route";
 
 declare module "fastify" {
     interface FastifyInstance {
@@ -33,6 +34,7 @@ export default async function createFastifyServer(
     await server.register(prismaPlugin);
 
     server.register(rentalRoutes, { prefix: "/api/v1/rentals" });
+    server.register(unitTypeRoutes, { prefix: "/api/v1/unit-types" });
 
     server.get("/", async () => {
         return { hello: "world" };
