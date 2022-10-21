@@ -12,3 +12,9 @@ export async function createRental(
 export async function countRentals() {
     return prisma.rental.count();
 }
+
+export async function findRentalByUuid(uuid: string) {
+    return prisma.rental.findUnique({
+        where: { uuid },
+    });
+}
