@@ -22,6 +22,8 @@ describe("POST /api/v1/rental-managers", () => {
     const examplePassword = "Q2Fz Zj{d";
     beforeAll(async () => {
         app = await createFastifyServer();
+        await app.prisma.rental.deleteMany();
+        await app.prisma.rentalManager.deleteMany();
         const unitType = await app.prisma.unitType.findFirstOrThrow();
         rental = await app.prisma.rental.create({
             data: {
@@ -29,7 +31,6 @@ describe("POST /api/v1/rental-managers", () => {
                 unitTypeId: unitType.id,
             },
         });
-        await app.prisma.rentalManager.deleteMany();
     });
 
     afterEach(async () => {
@@ -38,8 +39,9 @@ describe("POST /api/v1/rental-managers", () => {
     });
 
     afterAll(async () => {
-        await app.prisma.rental.deleteMany();
+        await app.prisma.rentalManager.deleteMany();
         argon2HashSpy.restore();
+        await app.close();
     });
 
     test("make sure example password matches regex", () => {
@@ -70,7 +72,7 @@ describe("POST /api/v1/rental-managers", () => {
             true,
         );
         expect(rentalManagers[0].password).toEqual(
-            argon2HashSpy.returnValues[0],
+            await argon2HashSpy.returnValues[0],
         );
         expect(rentalManagers.length).toBe(1);
     });
@@ -131,7 +133,7 @@ describe("POST /api/v1/rental-managers", () => {
         );
         expect(rentalManagers.length).toBe(1);
         expect(rentalManagers[0].password).toEqual(
-            argon2HashSpy.returnValues[0],
+            await argon2HashSpy.returnValues[0],
         );
         expect(secondResponse.statusCode).toBe(409);
         expect(secondResponse.json().message).toEqual(
@@ -159,6 +161,7 @@ describe("POST /api/v1/rental-managers", () => {
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
+
     test("should check for invalid email", async () => {
         const payload = {
             name: faker.name.firstName(),
@@ -179,6 +182,7 @@ describe("POST /api/v1/rental-managers", () => {
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
+
     test("should check if password is at least 8 characters", async () => {
         const payload = {
             name: faker.name.firstName(),
@@ -193,10 +197,13 @@ describe("POST /api/v1/rental-managers", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
+        );
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
+
     test("should check if password has at least one small letter", async () => {
         const payload = {
             name: faker.name.firstName(),
@@ -211,10 +218,13 @@ describe("POST /api/v1/rental-managers", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
+        );
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
+
     test("should check if password has at least one capital letter", async () => {
         const payload = {
             name: faker.name.firstName(),
@@ -229,10 +239,13 @@ describe("POST /api/v1/rental-managers", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
+        );
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
+
     test("should check if password has at least one number", async () => {
         const payload = {
             name: faker.name.firstName(),
@@ -247,10 +260,13 @@ describe("POST /api/v1/rental-managers", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
+        );
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
+
     test("should check if password has at least one special character", async () => {
         const payload = {
             name: faker.name.firstName(),
@@ -265,10 +281,13 @@ describe("POST /api/v1/rental-managers", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
+        );
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
+
     test("should check if rentalUuid is a valid uuid", async () => {
         const payload = {
             name: faker.name.firstName(),
