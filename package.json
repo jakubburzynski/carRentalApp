@@ -8,8 +8,8 @@
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "format": "prettier --ignore-unknown --config .prettierrc --write '**/*.{js,ts,json}'",
-        "test": "jest --coverage --collectCoverageFrom='src/**/*.ts'",
-        "test:watch": "jest --watch",
+        "test": "jest -i --coverage --collectCoverageFrom='src/**/*.ts'",
+        "test:watch": "jest -i --watch",
         "build": "tsc",
         "start": "node build/app.js",
         "dev": "tsnd --rs --exit-child --watch='./src/**/*.ts' --respawn --transpile-only src/app.ts"
