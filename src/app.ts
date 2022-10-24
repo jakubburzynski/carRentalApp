@@ -6,7 +6,7 @@ import createFastifyServer from "./loaders/fastify";
     });
 
     server.listen(
-        { port: server.config.PORT, host: server.config.HOST },
+        { port: server.config.SERVER_PORT, host: "0.0.0.0" },
         (err) => {
             if (err) {
                 server.log.error(err);
