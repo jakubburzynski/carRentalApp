@@ -7,6 +7,7 @@ import rentalRoutes from "../modules/rental/rental.route";
 import prismaPlugin from "./prisma";
 import unitTypeRoutes from "../modules/unitType/unitType.route";
 import rentalManagerRoutes from "../modules/rentalManager/rentalManager.route";
+import { setupMailService } from "./mail";
 
 declare module "fastify" {
     export interface FastifyInstance {
@@ -28,6 +29,7 @@ export default async function createFastifyServer(
     }).withTypeProvider<TypeBoxTypeProvider>();
     await server.register(envPlugin);
     await server.register(prismaPlugin);
+    setupMailService(server.config);
 
     server.register(rentalRoutes, { prefix: "/api/v1/rentals" });
     server.register(rentalManagerRoutes, { prefix: "/api/v1/rental-managers" });
