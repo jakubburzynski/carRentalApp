@@ -22,7 +22,9 @@ export async function registerRentalManager(
             activationTokenExpiration: new Date(
                 Date.now() + 1000 * 60 * 60 * 24,
             ),
-            rentalId,
+            rental: {
+                connect: { id: rentalId },
+            },
         },
     });
     await mailingService.send({

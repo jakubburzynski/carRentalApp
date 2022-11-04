@@ -5,7 +5,12 @@ export async function createRental(
     rental: Pick<Rental, "name" | "unitTypeId">,
 ) {
     return prisma.rental.create({
-        data: rental,
+        data: {
+            name: rental.name,
+            unitType: {
+                connect: { id: rental.unitTypeId },
+            },
+        },
     });
 }
 
