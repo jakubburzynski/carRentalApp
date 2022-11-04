@@ -14,11 +14,15 @@ import argon2 from "argon2";
 import createFastifyServer from "../../loaders/fastify";
 import uuidRegex from "../../utils/uuidRegex.util";
 import passwordRegex from "../../utils/passwordRegex.util";
+import mailingService from "../../loaders/mail";
+import generateRandomToken from "../../utils/randomToken.util";
 
 describe("POST /api/v1/rental-managers", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
     const argon2HashSpy = sinon.spy(argon2, "hash");
+    const randomTokenSpy = sinon.spy(generateRandomToken);
+    const mailSendMock = sinon.stub(mailingService, "send").resolves();
     const examplePassword = "Q2Fz Zj{d";
     beforeAll(async () => {
         app = await createFastifyServer();
@@ -36,11 +40,15 @@ describe("POST /api/v1/rental-managers", () => {
     afterEach(async () => {
         await app.prisma.rentalManager.deleteMany();
         argon2HashSpy.resetHistory();
+        randomTokenSpy.resetHistory();
+        mailSendMock.resetHistory();
     });
 
     afterAll(async () => {
         await app.prisma.rentalManager.deleteMany();
         argon2HashSpy.restore();
+        randomTokenSpy.restore();
+        mailSendMock.restore();
         await app.close();
     });
 
@@ -74,7 +82,20 @@ describe("POST /api/v1/rental-managers", () => {
         expect(rentalManagers[0].password).toEqual(
             await argon2HashSpy.returnValues[0],
         );
+        expect(
+            mailSendMock.calledOnceWithExactly({
+                to: payload.email,
+                subject: "Rental manager account verifictation",
+                text: `Hi, ${payload.name}! Activation token: ${randomTokenSpy.returnValues[0]}, expires in 24 hours.`,
+                html: `Hi, ${payload.name}! Activation token: ${randomTokenSpy.returnValues[0]}, expires in 24 hours.`,
+            }),
+        ).toBe(true);
         expect(rentalManagers.length).toBe(1);
+        expect(rentalManagers[0].active).toBe(false);
+        expect(randomTokenSpy.calledOnceWithExactly(32)).toBe(true);
+        expect(rentalManagers[0].activationToken).toEqual(
+            randomTokenSpy.returnValues[0],
+        );
     });
 
     test("should not create a rental manager with not existing rental uuid", async () => {
