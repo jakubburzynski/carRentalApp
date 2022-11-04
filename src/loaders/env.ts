@@ -7,6 +7,7 @@ const initialEnvSchema = Type.Object({
     DATABASE_URL: Type.String(),
     SENDGRID_API_KEY: Type.String(),
     SENDGRID_SENDER_ADDRESS: Type.String(),
+    SENDGRID_SENDER_NAME: Type.String(),
     SERVER_PORT: Type.Number({ default: 3000 }),
     SERVER_HOST: Type.String({ default: "localhost" }),
     SERVER_HTTPS: Type.Boolean({ default: false }),
