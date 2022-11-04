@@ -3,8 +3,10 @@ import {
     describe,
     expect,
     beforeAll,
+    beforeEach,
     afterAll,
     afterEach,
+    jest,
 } from "@jest/globals";
 import { faker } from "@faker-js/faker";
 import { Rental } from "@prisma/client";
@@ -15,15 +17,23 @@ import createFastifyServer from "../../loaders/fastify";
 import uuidRegex from "../../utils/uuidRegex.util";
 import passwordRegex from "../../utils/passwordRegex.util";
 import mailingService from "../../loaders/mail";
-import generateRandomToken from "../../utils/randomToken.util";
+import * as randomToken from "../../utils/randomToken.util";
 
 describe("POST /api/v1/rental-managers", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
     const argon2HashSpy = sinon.spy(argon2, "hash");
-    const randomTokenSpy = sinon.spy(generateRandomToken);
+    const randomTokenSpy = sinon.spy(randomToken, "default");
     const mailSendMock = sinon.stub(mailingService, "send").resolves();
     const examplePassword = "Q2Fz Zj{d";
+    const fakeDate = new Date("2022-01-02T01:02:03Z");
+
+    beforeEach(() => {
+        jest.useFakeTimers({
+            advanceTimers: true,
+        }).setSystemTime(fakeDate);
+    });
+
     beforeAll(async () => {
         app = await createFastifyServer();
         await app.prisma.rental.deleteMany();
@@ -38,6 +48,8 @@ describe("POST /api/v1/rental-managers", () => {
     });
 
     afterEach(async () => {
+        jest.runOnlyPendingTimers();
+        jest.useRealTimers();
         await app.prisma.rentalManager.deleteMany();
         argon2HashSpy.resetHistory();
         randomTokenSpy.resetHistory();
@@ -95,6 +107,9 @@ describe("POST /api/v1/rental-managers", () => {
         expect(randomTokenSpy.calledOnceWithExactly(32)).toBe(true);
         expect(rentalManagers[0].activationToken).toEqual(
             randomTokenSpy.returnValues[0],
+        );
+        expect(rentalManagers[0].activationTokenExpiration.toString()).toBe(
+            new Date(fakeDate.getTime() + 1000 * 60 * 60 * 24).toString(),
         );
     });
 
