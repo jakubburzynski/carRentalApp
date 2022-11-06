@@ -9,7 +9,7 @@ import {
     jest,
 } from "@jest/globals";
 import { faker } from "@faker-js/faker";
-import { Rental } from "@prisma/client";
+import { Rental, RentalManager } from "@prisma/client";
 import sinon from "sinon";
 import argon2 from "argon2";
 
@@ -343,5 +343,190 @@ describe("POST /api/v1/rental-managers", () => {
         );
         expect(argon2HashSpy.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
+    });
+});
+
+describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
+    let app: Awaited<ReturnType<typeof createFastifyServer>>;
+    let rental: Rental;
+    let rentalManager: RentalManager;
+    const mailSendMock = sinon.stub(mailingService, "send").resolves();
+    const fakeDate = new Date("2022-01-02T01:02:03Z");
+    const payload = { active: true };
+    beforeEach(() => {
+        jest.useFakeTimers({
+            advanceTimers: true,
+        }).setSystemTime(fakeDate);
+    });
+
+    beforeAll(async () => {
+        app = await createFastifyServer();
+        await app.prisma.rental.deleteMany();
+        await app.prisma.rentalManager.deleteMany();
+        const unitType = await app.prisma.unitType.findFirstOrThrow();
+        rental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitTypeId: unitType.id,
+            },
+        });
+        rentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash("Q2Fz Zj{d"),
+                activationToken:
+                    "3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74e74",
+                activationTokenExpiration: new Date(
+                    fakeDate.getTime() + 1000 * 60 * 60 * 24,
+                ),
+                rentalId: rental.id,
+            },
+        });
+    });
+
+    afterEach(async () => {
+        jest.runOnlyPendingTimers();
+        jest.useRealTimers();
+        mailSendMock.resetHistory();
+    });
+
+    afterAll(async () => {
+        await app.prisma.rentalManager.deleteMany();
+        mailSendMock.restore();
+        await app.close();
+    });
+
+    test("should activate rental manager", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            payload,
+        });
+
+        const rentalManagers = await app.prisma.rentalManager.findMany();
+        expect(response.statusCode).toBe(204);
+        expect(rentalManagers).toHaveLength(1);
+        expect(rentalManagers[0].active).toBe(true);
+        expect(rentalManagers[0].activationToken).toBeNull();
+        expect(rentalManagers[0].activationTokenExpiration).toBeNull();
+        expect(mailSendMock).toHaveBeenNthCalledWith(1, {
+            to: rentalManager.email,
+            subject: "Rental manager account activated",
+            text: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
+            html: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
+        });
+    });
+
+    test("should not activate rental manager with non existing uuid", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: `/api/v1/rental-managers/${faker.datatype.uuid()}/active?token=${
+                rentalManager.activationToken
+            }`,
+            payload,
+        });
+
+        const rentalManagers = await app.prisma.rentalManager.findMany();
+        expect(response.statusCode).toBe(404);
+        expect(response.json().message).toEqual("Rental manager not found");
+        expect(rentalManagers).toHaveLength(1);
+        expect(rentalManagers[0].active).toBe(false);
+        expect(rentalManagers[0].activationToken).not.toBeNull();
+        expect(rentalManagers[0].activationTokenExpiration).not.toBeNull();
+        expect(mailSendMock.notCalled).toBe(true);
+    });
+
+    test("should not activate rental manager with non existing token", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74b31`,
+            payload,
+        });
+
+        const rentalManagers = await app.prisma.rentalManager.findMany();
+        expect(response.statusCode).toBe(409);
+        expect(response.json().message).toEqual("Invalid activation token");
+        expect(rentalManagers).toHaveLength(1);
+        expect(rentalManagers[0].active).toBe(false);
+        expect(rentalManagers[0].activationToken).not.toBeNull();
+        expect(rentalManagers[0].activationTokenExpiration).not.toBeNull();
+        expect(mailSendMock.notCalled).toBe(true);
+    });
+
+    test("should not activate rental manager after token expiration", async () => {
+        jest.setSystemTime(fakeDate.getTime() + 1000 * 60 * 60 * 24 * 5);
+        const response = await app.inject({
+            method: "PUT",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            payload,
+        });
+
+        const rentalManagers = await app.prisma.rentalManager.findMany();
+        expect(response.statusCode).toBe(409);
+        expect(response.json().message).toEqual("Activation token expired");
+        expect(rentalManagers).toHaveLength(1);
+        expect(rentalManagers[0].active).toBe(false);
+        expect(rentalManagers[0].activationToken).not.toBeNull();
+        expect(rentalManagers[0].activationTokenExpiration).not.toBeNull();
+        expect(mailSendMock.notCalled).toBe(true);
+    });
+
+    test("should check if uuid param is a valid uuid", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: "/api/v1/rental-managers/123/active?token=3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74e74",
+            payload,
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            'params/uuid must match format "uuid"',
+        );
+    });
+
+    test("should check if token query string is a valid uuid", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active?token=12345",
+            payload,
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual("?");
+    });
+
+    test("should check if token query string is present", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active",
+            payload,
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual("?");
+    });
+
+    test("should check if body active property is present", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active",
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual("?");
+    });
+
+    test("should check if body active property is true", async () => {
+        const response = await app.inject({
+            method: "PUT",
+            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active",
+            payload: {
+                active: false,
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual("?");
     });
 });
