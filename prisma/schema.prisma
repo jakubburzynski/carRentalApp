@@ -50,8 +50,8 @@ model RentalManager {
   email String @db.VarChar(254)
   password String
   active Boolean @default(false)
-  activationToken String @db.Text
-  activationTokenExpiration DateTime
+  activationToken String? @db.Text
+  activationTokenExpiration DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   rental Rental @relation(fields: [rentalId], references: [id])
