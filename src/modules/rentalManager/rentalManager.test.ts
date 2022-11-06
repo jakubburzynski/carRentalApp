@@ -10,7 +10,7 @@ import {
 } from "@jest/globals";
 import { faker } from "@faker-js/faker";
 import { Rental, RentalManager } from "@prisma/client";
-import sinon from "sinon";
+import sinon, { SinonStubbedMember, SinonSpiedMember } from "sinon";
 import argon2 from "argon2";
 
 import createFastifyServer from "../../loaders/fastify";
@@ -22,9 +22,10 @@ import * as randomToken from "../../utils/randomToken.util";
 describe("POST /api/v1/rental-managers", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
-    const argon2HashSpy = sinon.spy(argon2, "hash");
-    const randomTokenSpy = sinon.spy(randomToken, "default");
-    const mailSendMock = sinon.stub(mailingService, "send").resolves();
+    let argon2HashSpy: SinonSpiedMember<typeof argon2.hash>;
+    let randomTokenSpy: SinonSpiedMember<typeof randomToken.default>;
+    let mailSendStub: SinonStubbedMember<typeof mailingService.send>;
+
     const examplePassword = "Q2Fz Zj{d";
     const fakeDate = new Date("2022-01-02T01:02:03Z");
 
@@ -35,6 +36,9 @@ describe("POST /api/v1/rental-managers", () => {
     });
 
     beforeAll(async () => {
+        argon2HashSpy = sinon.spy(argon2, "hash");
+        randomTokenSpy = sinon.spy(randomToken, "default");
+        mailSendStub = sinon.stub(mailingService, "send").resolves();
         app = await createFastifyServer();
         await app.prisma.rental.deleteMany();
         await app.prisma.rentalManager.deleteMany();
@@ -53,14 +57,14 @@ describe("POST /api/v1/rental-managers", () => {
         await app.prisma.rentalManager.deleteMany();
         argon2HashSpy.resetHistory();
         randomTokenSpy.resetHistory();
-        mailSendMock.resetHistory();
+        mailSendStub.resetHistory();
     });
 
     afterAll(async () => {
         await app.prisma.rentalManager.deleteMany();
         argon2HashSpy.restore();
         randomTokenSpy.restore();
-        mailSendMock.restore();
+        mailSendStub.restore();
         await app.close();
     });
 
@@ -95,7 +99,7 @@ describe("POST /api/v1/rental-managers", () => {
             await argon2HashSpy.returnValues[0],
         );
         expect(
-            mailSendMock.calledOnceWithExactly({
+            mailSendStub.calledOnceWithExactly({
                 to: payload.email,
                 subject: "Rental manager account verifictation",
                 text: `Hi, ${payload.name}! Activation token: ${randomTokenSpy.returnValues[0]}, expires in 24 hours.`,
@@ -350,9 +354,11 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
     let rentalManager: RentalManager;
-    const mailSendMock = sinon.stub(mailingService, "send").resolves();
+    let mailSendStub: SinonStubbedMember<typeof mailingService.send>;
+
     const fakeDate = new Date("2022-01-02T01:02:03Z");
     const payload = { active: true };
+
     beforeEach(() => {
         jest.useFakeTimers({
             advanceTimers: true,
@@ -360,6 +366,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     });
 
     beforeAll(async () => {
+        mailSendStub = sinon.stub(mailingService, "send").resolves();
         app = await createFastifyServer();
         await app.prisma.rental.deleteMany();
         await app.prisma.rentalManager.deleteMany();
@@ -388,12 +395,12 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     afterEach(async () => {
         jest.runOnlyPendingTimers();
         jest.useRealTimers();
-        mailSendMock.resetHistory();
+        mailSendStub.resetHistory();
     });
 
     afterAll(async () => {
         await app.prisma.rentalManager.deleteMany();
-        mailSendMock.restore();
+        mailSendStub.restore();
         await app.close();
     });
 
@@ -410,7 +417,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(rentalManagers[0].active).toBe(true);
         expect(rentalManagers[0].activationToken).toBeNull();
         expect(rentalManagers[0].activationTokenExpiration).toBeNull();
-        expect(mailSendMock).toHaveBeenNthCalledWith(1, {
+        expect(mailSendStub).toHaveBeenNthCalledWith(1, {
             to: rentalManager.email,
             subject: "Rental manager account activated",
             text: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
@@ -434,7 +441,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(rentalManagers[0].active).toBe(false);
         expect(rentalManagers[0].activationToken).not.toBeNull();
         expect(rentalManagers[0].activationTokenExpiration).not.toBeNull();
-        expect(mailSendMock.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should not activate rental manager with non existing token", async () => {
@@ -451,7 +458,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(rentalManagers[0].active).toBe(false);
         expect(rentalManagers[0].activationToken).not.toBeNull();
         expect(rentalManagers[0].activationTokenExpiration).not.toBeNull();
-        expect(mailSendMock.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should not activate rental manager after token expiration", async () => {
@@ -469,7 +476,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(rentalManagers[0].active).toBe(false);
         expect(rentalManagers[0].activationToken).not.toBeNull();
         expect(rentalManagers[0].activationTokenExpiration).not.toBeNull();
-        expect(mailSendMock.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should check if uuid param is a valid uuid", async () => {
