@@ -104,15 +104,15 @@ describe("POST /api/v1/rental-managers", () => {
         expect(
             mailSendStub.calledOnceWithExactly({
                 to: payload.email,
-                subject: "Rental manager account verifictation",
+                subject: `[${rental.name}] Rental manager account verifictation`,
                 text: `Hi, ${
                     payload.name
-                }! Activation token: ${await randomTokenSpy
-                    .returnValues[0]}, expires in 24 hours.`,
+                }! Activation token: '${await randomTokenSpy
+                    .returnValues[0]}', expires in 24 hours.`,
                 html: `Hi, ${
                     payload.name
-                }! Activation token: ${await randomTokenSpy
-                    .returnValues[0]}, expires in 24 hours.`,
+                }! Activation token: '${await randomTokenSpy
+                    .returnValues[0]}', expires in 24 hours.`,
             }),
         ).toBe(true);
         expect(rentalManagers.length).toBe(1);
@@ -140,6 +140,8 @@ describe("POST /api/v1/rental-managers", () => {
         expect(response.statusCode).toBe(409);
         expect(response.json().message).toEqual("Invalid rental uuid");
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 
@@ -178,6 +180,21 @@ describe("POST /api/v1/rental-managers", () => {
         expect(argon2HashSpy.calledOnceWithExactly(firstPayload.password)).toBe(
             true,
         );
+        expect(
+            mailSendStub.calledOnceWithExactly({
+                to: firstPayload.email,
+                subject: `[${rental.name}] Rental manager account verifictation`,
+                text: `Hi, ${
+                    firstPayload.name
+                }! Activation token: '${await randomTokenSpy
+                    .returnValues[0]}', expires in 24 hours.`,
+                html: `Hi, ${
+                    firstPayload.name
+                }! Activation token: '${await randomTokenSpy
+                    .returnValues[0]}', expires in 24 hours.`,
+            }),
+        ).toBe(true);
+        expect(randomTokenSpy.calledOnce).toBe(true);
         expect(rentalManagers.length).toBe(1);
         expect(rentalManagers[0].password).toEqual(
             await argon2HashSpy.returnValues[0],
@@ -227,6 +244,8 @@ describe("POST /api/v1/rental-managers", () => {
             'body/email must match format "email"',
         );
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 
@@ -248,6 +267,8 @@ describe("POST /api/v1/rental-managers", () => {
             'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
         );
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 
@@ -269,6 +290,8 @@ describe("POST /api/v1/rental-managers", () => {
             'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
         );
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 
@@ -290,6 +313,8 @@ describe("POST /api/v1/rental-managers", () => {
             'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
         );
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 
@@ -311,6 +336,8 @@ describe("POST /api/v1/rental-managers", () => {
             'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
         );
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 
@@ -332,6 +359,8 @@ describe("POST /api/v1/rental-managers", () => {
             'body/password must match pattern "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[ !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~])[A-Za-z\\d !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~&]{8,}$"',
         );
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 
@@ -353,6 +382,8 @@ describe("POST /api/v1/rental-managers", () => {
             'body/rentalUuid must match format "uuid"',
         );
         expect(argon2HashSpy.notCalled).toBe(true);
+        expect(randomTokenSpy.notCalled).toBe(true);
+        expect(mailSendStub.notCalled).toBe(true);
         expect(await app.prisma.rentalManager.count()).toBe(0);
     });
 });
@@ -420,6 +451,10 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         const rentalManagers = await app.prisma.rentalManager.findMany();
         expect(response.statusCode).toBe(204);
         expect(response.body).toEqual("");
+        expect(response.headers).toHaveProperty(
+            "referrer-policy",
+            "no-referrer",
+        );
         expect(rentalManagers).toHaveLength(1);
         expect(rentalManagers[0].active).toBe(true);
         expect(rentalManagers[0].activationToken).toBeNull();
@@ -427,7 +462,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(
             mailSendStub.calledOnceWithExactly({
                 to: rentalManager.email,
-                subject: "Rental manager account activated",
+                subject: `[${rental.name}] Rental manager account activated`,
                 text: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
                 html: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
             }),
@@ -458,7 +493,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(
             mailSendStub.calledOnceWithExactly({
                 to: rentalManager.email,
-                subject: "Rental manager account activated",
+                subject: `[${rental.name}] Rental manager account activated`,
                 text: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
                 html: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
             }),
@@ -530,6 +565,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(response.json().message).toEqual(
             'params/uuid must match format "uuid"',
         );
+        expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should check if token query string is a valid token", async () => {
@@ -543,6 +579,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(response.json().message).toEqual(
             "querystring/token must NOT have fewer than 32 characters",
         );
+        expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should check if token query string is present", async () => {
@@ -556,6 +593,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(response.json().message).toEqual(
             "querystring must have required property 'token'",
         );
+        expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should check if body active property is present", async () => {
@@ -566,6 +604,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual("body must be object");
+        expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should check if body active property is true", async () => {
@@ -581,5 +620,6 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         expect(response.json().message).toEqual(
             "body/active must be equal to constant",
         );
+        expect(mailSendStub.notCalled).toBe(true);
     });
 });
