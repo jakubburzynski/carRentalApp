@@ -5,14 +5,27 @@ import { prisma } from "../../loaders/prisma";
 import generateRandomToken from "../../utils/randomToken.util";
 import mailingService from "../../loaders/mail";
 import { ProcessingException } from "../../utils/processingException.util";
+import { findRentalByUuid } from "../rental/rental.service";
 
 export async function registerRentalManager(
-    rentalManager: Pick<
-        RentalManager,
-        "name" | "email" | "password" | "rentalId"
-    >,
+    rentalManager: Pick<RentalManager, "name" | "email" | "password"> & {
+        rentalUuid: string;
+    },
 ) {
-    const { name, email, password, rentalId } = rentalManager;
+    const rentalManagerCount = await countRentalManagers();
+    if (rentalManagerCount >= 1) {
+        throw new ProcessingException(
+            409,
+            "It is not possible to register more than one rental manager",
+        );
+    }
+
+    const rental = await findRentalByUuid(rentalManager.rentalUuid);
+    if (!rental) {
+        throw new ProcessingException(409, "Invalid rental uuid");
+    }
+
+    const { name, email, password } = rentalManager;
     const hashedPassword = await argon2.hash(password);
     const createdRentalManager = await prisma.rentalManager.create({
         data: {
@@ -24,7 +37,7 @@ export async function registerRentalManager(
                 Date.now() + 1000 * 60 * 60 * 24,
             ),
             rental: {
-                connect: { id: rentalId },
+                connect: { id: rental.id },
             },
         },
         include: {
