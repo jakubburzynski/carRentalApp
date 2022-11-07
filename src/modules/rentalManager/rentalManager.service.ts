@@ -27,12 +27,15 @@ export async function registerRentalManager(
                 connect: { id: rentalId },
             },
         },
+        include: {
+            rental: true,
+        },
     });
     await mailingService.send({
         to: createdRentalManager.email,
-        subject: "Rental manager account verifictation",
-        text: `Hi, ${createdRentalManager.name}! Activation token: ${createdRentalManager.activationToken}, expires in 24 hours.`,
-        html: `Hi, ${createdRentalManager.name}! Activation token: ${createdRentalManager.activationToken}, expires in 24 hours.`,
+        subject: `[${createdRentalManager.rental.name}] Rental manager account verifictation`,
+        text: `Hi, ${createdRentalManager.name}! Activation token: '${createdRentalManager.activationToken}', expires in 24 hours.`,
+        html: `Hi, ${createdRentalManager.name}! Activation token: '${createdRentalManager.activationToken}', expires in 24 hours.`,
     });
     return createdRentalManager;
 }
@@ -66,10 +69,13 @@ export async function activateRentalManager(uuid: string, token: string) {
             activationToken: null,
             activationTokenExpiration: null,
         },
+        include: {
+            rental: true,
+        },
     });
     await mailingService.send({
         to: activatedRentalManager.email,
-        subject: "Rental manager account activated",
+        subject: `[${activatedRentalManager.rental.name}] Rental manager account activated`,
         text: `Hi, ${activatedRentalManager.name}! Your account has been activated. You can now log in to your account.`,
         html: `Hi, ${activatedRentalManager.name}! Your account has been activated. You can now log in to your account.`,
     });
