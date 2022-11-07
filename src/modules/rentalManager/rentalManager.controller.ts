@@ -1,11 +1,18 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { findRentalByUuid } from "../rental/rental.service";
 
-import { PostRegisterRentalManagerBody } from "./rentalManager.schema";
 import {
+    PostRegisterRentalManagerBody,
+    PutActivateRentalManagerBody,
+    PutActivateRentalManagerParams,
+    PutActivateRentalManagerQuery,
+} from "./rentalManager.schema";
+import {
+    activateRentalManager,
     countRentalManagers,
     registerRentalManager,
 } from "./rentalManager.service";
+
 export async function postRegisterRentalManager(
     request: FastifyRequest<{ Body: PostRegisterRentalManagerBody }>,
     reply: FastifyReply,
@@ -30,4 +37,16 @@ export async function postRegisterRentalManager(
         rentalId: rental.id,
     });
     return reply.status(201).send(rentalManager);
+}
+
+export async function putActivateRentalManager(
+    request: FastifyRequest<{
+        Body: PutActivateRentalManagerBody;
+        Params: PutActivateRentalManagerParams;
+        Querystring: PutActivateRentalManagerQuery;
+    }>,
+    reply: FastifyReply,
+) {
+    await activateRentalManager(request.params.uuid, request.query.token);
+    return reply.status(204).send();
 }
