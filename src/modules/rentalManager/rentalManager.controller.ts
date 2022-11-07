@@ -48,5 +48,5 @@ export async function putActivateRentalManager(
     reply: FastifyReply,
 ) {
     await activateRentalManager(request.params.uuid, request.query.token);
-    return reply.status(204).send();
+    return reply.status(204).header("Referrer-Policy", "no-referrer").send();
 }
