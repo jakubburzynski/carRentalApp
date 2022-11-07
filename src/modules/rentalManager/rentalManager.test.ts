@@ -46,7 +46,9 @@ describe("POST /api/v1/rental-managers", () => {
         rental = await app.prisma.rental.create({
             data: {
                 name: faker.company.name(),
-                unitTypeId: unitType.id,
+                unitType: {
+                    connect: { id: unitType.id },
+                },
             },
         });
     });
@@ -410,7 +412,11 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
                 activationTokenExpiration: new Date(
                     fakeDate.getTime() + 1000 * 60 * 60 * 24,
                 ),
-                rentalId: rental.id,
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
             },
         });
     });
@@ -424,7 +430,11 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         rental = await app.prisma.rental.create({
             data: {
                 name: faker.company.name(),
-                unitTypeId: unitType.id,
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
             },
         });
     });
