@@ -52,7 +52,6 @@ describe("POST /api/v1/rental-managers", () => {
     });
 
     afterEach(async () => {
-        jest.runOnlyPendingTimers();
         jest.useRealTimers();
         await app.prisma.rentalManager.deleteMany();
         argon2HashSpy.resetHistory();
@@ -98,23 +97,31 @@ describe("POST /api/v1/rental-managers", () => {
         expect(rentalManagers[0].password).toEqual(
             await argon2HashSpy.returnValues[0],
         );
+        expect(randomTokenSpy.calledOnceWithExactly(32)).toBe(true);
+        expect(rentalManagers[0].activationToken).toEqual(
+            await randomTokenSpy.returnValues[0],
+        );
         expect(
             mailSendStub.calledOnceWithExactly({
                 to: payload.email,
                 subject: "Rental manager account verifictation",
-                text: `Hi, ${payload.name}! Activation token: ${randomTokenSpy.returnValues[0]}, expires in 24 hours.`,
-                html: `Hi, ${payload.name}! Activation token: ${randomTokenSpy.returnValues[0]}, expires in 24 hours.`,
+                text: `Hi, ${
+                    payload.name
+                }! Activation token: ${await randomTokenSpy
+                    .returnValues[0]}, expires in 24 hours.`,
+                html: `Hi, ${
+                    payload.name
+                }! Activation token: ${await randomTokenSpy
+                    .returnValues[0]}, expires in 24 hours.`,
             }),
         ).toBe(true);
         expect(rentalManagers.length).toBe(1);
         expect(rentalManagers[0].active).toBe(false);
-        expect(randomTokenSpy.calledOnceWithExactly(32)).toBe(true);
-        expect(rentalManagers[0].activationToken).toEqual(
-            randomTokenSpy.returnValues[0],
-        );
-        expect(rentalManagers[0].activationTokenExpiration.toString()).toBe(
-            new Date(fakeDate.getTime() + 1000 * 60 * 60 * 24).toString(),
-        );
+        expect(rentalManagers[0].activationToken).toHaveLength(32);
+        expect(rentalManagers[0].activationTokenExpiration).not.toBeNull();
+        expect(
+            (rentalManagers[0].activationTokenExpiration as Date).toString(),
+        ).toBe(new Date(fakeDate.getTime() + 1000 * 60 * 60 * 24).toString());
     });
 
     test("should not create a rental manager with not existing rental uuid", async () => {
@@ -225,7 +232,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should check if password is at least 8 characters", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: faker.name.fullName(),
             email: faker.internet.email(),
             password: "Aa1!Aa1",
             rentalUuid: rental.uuid,
@@ -359,10 +366,22 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     const fakeDate = new Date("2022-01-02T01:02:03Z");
     const payload = { active: true };
 
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.useFakeTimers({
             advanceTimers: true,
         }).setSystemTime(fakeDate);
+        rentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash("Q2Fz Zj{d"),
+                activationToken: await randomToken.default(32),
+                activationTokenExpiration: new Date(
+                    fakeDate.getTime() + 1000 * 60 * 60 * 24,
+                ),
+                rentalId: rental.id,
+            },
+        });
     });
 
     beforeAll(async () => {
@@ -377,23 +396,10 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
                 unitTypeId: unitType.id,
             },
         });
-        rentalManager = await app.prisma.rentalManager.create({
-            data: {
-                name: faker.name.firstName(),
-                email: faker.internet.email(),
-                password: await argon2.hash("Q2Fz Zj{d"),
-                activationToken:
-                    "3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74e74",
-                activationTokenExpiration: new Date(
-                    fakeDate.getTime() + 1000 * 60 * 60 * 24,
-                ),
-                rentalId: rental.id,
-            },
-        });
     });
 
     afterEach(async () => {
-        jest.runOnlyPendingTimers();
+        await app.prisma.rentalManager.deleteMany();
         jest.useRealTimers();
         mailSendStub.resetHistory();
     });
@@ -413,16 +419,50 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
         const rentalManagers = await app.prisma.rentalManager.findMany();
         expect(response.statusCode).toBe(204);
+        expect(response.body).toEqual("");
         expect(rentalManagers).toHaveLength(1);
         expect(rentalManagers[0].active).toBe(true);
         expect(rentalManagers[0].activationToken).toBeNull();
         expect(rentalManagers[0].activationTokenExpiration).toBeNull();
-        expect(mailSendStub).toHaveBeenNthCalledWith(1, {
-            to: rentalManager.email,
-            subject: "Rental manager account activated",
-            text: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
-            html: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
+        expect(
+            mailSendStub.calledOnceWithExactly({
+                to: rentalManager.email,
+                subject: "Rental manager account activated",
+                text: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
+                html: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
+            }),
+        ).toBe(true);
+    });
+
+    test("should check for already activated rental manager", async () => {
+        await app.inject({
+            method: "PUT",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            payload,
         });
+        const secondResponse = await app.inject({
+            method: "PUT",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            payload,
+        });
+
+        const rentalManagers = await app.prisma.rentalManager.findMany();
+        expect(secondResponse.statusCode).toBe(409);
+        expect(secondResponse.json().message).toEqual(
+            "Rental manager already activated",
+        );
+        expect(rentalManagers).toHaveLength(1);
+        expect(rentalManagers[0].active).toBe(true);
+        expect(rentalManagers[0].activationToken).toBeNull();
+        expect(rentalManagers[0].activationTokenExpiration).toBeNull();
+        expect(
+            mailSendStub.calledOnceWithExactly({
+                to: rentalManager.email,
+                subject: "Rental manager account activated",
+                text: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
+                html: `Hi, ${rentalManager.name}! Your account has been activated. You can now log in to your account.`,
+            }),
+        ).toBe(true);
     });
 
     test("should not activate rental manager with non existing uuid", async () => {
@@ -447,7 +487,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     test("should not activate rental manager with non existing token", async () => {
         const response = await app.inject({
             method: "PUT",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74b31`,
+            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=FUO3vpGMe4cWC2L1LN85oH8v56HND0Fy`,
             payload,
         });
 
@@ -482,7 +522,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     test("should check if uuid param is a valid uuid", async () => {
         const response = await app.inject({
             method: "PUT",
-            url: "/api/v1/rental-managers/123/active?token=3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74e74",
+            url: "/api/v1/rental-managers/123/active?token=FUO3vpGMe4cWC2L1LN85oH8v56HND0Fy",
             payload,
         });
 
@@ -492,7 +532,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         );
     });
 
-    test("should check if token query string is a valid uuid", async () => {
+    test("should check if token query string is a valid token", async () => {
         const response = await app.inject({
             method: "PUT",
             url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active?token=12345",
@@ -500,7 +540,9 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            "querystring/token must NOT have fewer than 32 characters",
+        );
     });
 
     test("should check if token query string is present", async () => {
@@ -511,17 +553,19 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            "querystring must have required property 'token'",
+        );
     });
 
     test("should check if body active property is present", async () => {
         const response = await app.inject({
             method: "PUT",
-            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active",
+            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active?token=3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74e74",
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual("body must be object");
     });
 
     test("should check if body active property is true", async () => {
@@ -534,6 +578,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("?");
+        expect(response.json().message).toEqual(
+            "body/active must be equal to constant",
+        );
     });
 });
