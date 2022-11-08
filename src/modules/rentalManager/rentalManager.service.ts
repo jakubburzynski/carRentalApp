@@ -96,6 +96,28 @@ export async function activateRentalManager(uuid: string, token: string) {
     return activatedRentalManager;
 }
 
+export async function findRentalManagerByLoginCredentials(
+    email: string,
+    password: string,
+) {
+    const rentalManager = await prisma.rentalManager.findUnique({
+        where: { email },
+        include: {
+            rental: true,
+        },
+    });
+
+    if (!rentalManager) {
+        throw new ProcessingException(404, "Rental manager not found");
+    }
+
+    if (!(await argon2.verify(rentalManager.password, password))) {
+        throw new ProcessingException(404, "Rental manager not found");
+    }
+
+    return rentalManager;
+}
+
 export async function countRentalManagers() {
     return prisma.rentalManager.count();
 }
