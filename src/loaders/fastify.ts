@@ -1,18 +1,27 @@
 import fastify, { FastifyServerOptions } from "fastify";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Rental, RentalManager } from "@prisma/client";
+import fastifyCookie from "@fastify/cookie";
+import fastifySession from "@fastify/session";
 
 import envPlugin, { EnvConfig } from "./env";
-import rentalRoutes from "../modules/rental/rental.route";
 import prismaPlugin from "./prisma";
+import rentalRoutes from "../modules/rental/rental.route";
 import unitTypeRoutes from "../modules/unitType/unitType.route";
 import rentalManagerRoutes from "../modules/rentalManager/rentalManager.route";
+import authRoutes from "../modules/auth/auth.route";
 import { setupMailService } from "./mail";
+import generateRandomToken from "../utils/randomToken.util";
 
 declare module "fastify" {
     export interface FastifyInstance {
         config: EnvConfig;
         prisma: PrismaClient;
+    }
+    export interface Session {
+        authenticated: boolean;
+        rentalManager: Pick<RentalManager, "uuid" | "name">;
+        rental: Pick<Rental, "uuid" | "name">;
     }
 }
 
@@ -27,10 +36,24 @@ export default async function createFastifyServer(
             },
         },
     }).withTypeProvider<TypeBoxTypeProvider>();
-    await server.register(envPlugin);
     await server.register(prismaPlugin);
+    server.register(envPlugin);
+    await server.after();
+    server.register(fastifyCookie);
+    server.register(fastifySession, {
+        cookieName: "sessionId",
+        cookie: {
+            secure: server.config.SERVER_HTTPS,
+            httpOnly: true,
+            sameSite: "lax",
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+        },
+        secret: await generateRandomToken(64),
+        saveUninitialized: false,
+    });
     setupMailService(server.config);
 
+    server.register(authRoutes, { prefix: "/api/v1/auth" });
     server.register(rentalRoutes, { prefix: "/api/v1/rentals" });
     server.register(rentalManagerRoutes, { prefix: "/api/v1/rental-managers" });
     server.register(unitTypeRoutes, { prefix: "/api/v1/unit-types" });
