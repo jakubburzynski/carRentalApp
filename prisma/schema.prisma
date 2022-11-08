@@ -47,7 +47,7 @@ model RentalManager {
   id Int @id @default(autoincrement())
   uuid String @default(uuid()) @db.Uuid @unique
   name String @db.VarChar(50)
-  email String @db.VarChar(254)
+  email String @db.VarChar(254) @unique
   password String
   active Boolean @default(false)
   activationToken String? @db.Text
