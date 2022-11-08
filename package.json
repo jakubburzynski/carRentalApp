@@ -25,6 +25,8 @@
     },
     "homepage": "https://github.com/jakubburzynski/carRentalApp#readme",
     "dependencies": {
+        "@fastify/cookie": "^8.3.0",
+        "@fastify/session": "^10.0.2",
         "@fastify/type-provider-typebox": "^2.3.0",
         "@prisma/client": "^4.4.0",
         "@sendgrid/mail": "^7.7.0",
