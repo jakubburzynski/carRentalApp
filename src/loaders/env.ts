@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { Static, Type } from "@sinclair/typebox";
 import { envSchema } from "env-schema";
-import { FastifyPluginAsync } from "fastify";
+import { FastifyPluginCallback } from "fastify";
 
 const initialEnvSchema = Type.Object({
     DATABASE_URL: Type.String(),
@@ -34,8 +34,10 @@ const envConfig: EnvConfig = {
     SERVER_BASE_URL: buildBaseUrl(),
 };
 
-const envPlugin: FastifyPluginAsync = async (server) => {
+const envPlugin: FastifyPluginCallback = (server, options, done) => {
     server.decorate("config", envConfig);
+
+    done();
 };
 
 export default fp(envPlugin);
