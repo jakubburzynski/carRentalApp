@@ -1,6 +1,9 @@
 import { FastifyInstance } from "fastify";
 
-import { postLoginRentalManager } from "./auth.controller";
+import {
+    deleteLogoutRentalManager,
+    postLoginRentalManager,
+} from "./auth.controller";
 import {
     postLoginRentalManagerBody,
     postLoginRentalManagerResponse,
@@ -18,5 +21,13 @@ export default async function authRoutes(server: FastifyInstance) {
             },
         },
         postLoginRentalManager,
+    );
+
+    server.delete(
+        "/sessions",
+        {
+            preHandler: server.auth([server.isLoggedIn]),
+        },
+        deleteLogoutRentalManager,
     );
 }
