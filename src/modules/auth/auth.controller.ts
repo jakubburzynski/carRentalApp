@@ -33,3 +33,11 @@ export async function postLoginRentalManager(
 
     return reply.status(201).send();
 }
+
+export async function deleteLogoutRentalManager(
+    request: FastifyRequest,
+    reply: FastifyReply,
+) {
+    request.session.destroy();
+    return reply.status(204).send();
+}
