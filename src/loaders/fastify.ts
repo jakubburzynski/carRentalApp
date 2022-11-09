@@ -3,6 +3,7 @@ import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { PrismaClient, Rental, RentalManager } from "@prisma/client";
 import fastifyCookie from "@fastify/cookie";
 import fastifySession from "@fastify/session";
+import fastifyAuth, { FastifyAuthFunction } from "@fastify/auth";
 
 import envPlugin, { EnvConfig } from "./env";
 import prismaPlugin from "./prisma";
@@ -12,11 +13,13 @@ import rentalManagerRoutes from "../modules/rentalManager/rentalManager.route";
 import authRoutes from "../modules/auth/auth.route";
 import { setupMailService } from "./mail";
 import generateRandomToken from "../utils/randomToken.util";
+import { isLoggedIn } from "../modules/auth/auth.middleware";
 
 declare module "fastify" {
     export interface FastifyInstance {
         config: EnvConfig;
         prisma: PrismaClient;
+        isLoggedIn: FastifyAuthFunction;
     }
     export interface Session {
         authenticated: boolean;
@@ -51,6 +54,8 @@ export default async function createFastifyServer(
         secret: await generateRandomToken(64),
         saveUninitialized: false,
     });
+    server.decorate("isLoggedIn", isLoggedIn);
+    server.register(fastifyAuth);
     setupMailService(server.config);
 
     server.register(authRoutes, { prefix: "/api/v1/auth" });
