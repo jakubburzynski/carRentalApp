@@ -282,3 +282,98 @@ describe("POST /api/v1/auth/sessions", () => {
         expect(response.cookies).toHaveLength(0);
     });
 });
+
+describe("DELETE /api/v1/auth/sessions", () => {
+    let app: Awaited<ReturnType<typeof createFastifyServer>>;
+    let rental: Rental;
+    let rentalManager: RentalManager;
+    let memoryStoreDestroySpy: SinonSpiedMember<MemoryStore["destroy"]>;
+
+    const examplePassword = "Q2Fz Zj{d";
+
+    beforeEach(async () => {
+        rentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
+            },
+        });
+    });
+
+    beforeAll(async () => {
+        app = await createFastifyServer();
+        memoryStoreDestroySpy = sinon.spy(MemoryStore.prototype, "destroy");
+        await app.prisma.rental.deleteMany();
+        await app.prisma.rentalManager.deleteMany();
+        const unitType = await app.prisma.unitType.findFirstOrThrow();
+        rental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
+    });
+
+    afterEach(async () => {
+        await app.prisma.rentalManager.deleteMany();
+        memoryStoreDestroySpy.resetHistory();
+    });
+
+    afterAll(async () => {
+        await app.prisma.rentalManager.deleteMany();
+        memoryStoreDestroySpy.restore();
+        await app.close();
+    });
+
+    test("should logout rental manager", async () => {
+        const loginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: rentalManager.email,
+                password: examplePassword,
+            },
+            cookies: undefined,
+        });
+
+        const logoutResponse = await app.inject({
+            method: "DELETE",
+            url: "/api/v1/auth/sessions",
+            cookies: {
+                sessionId: (
+                    loginResponse.cookies[0] as { name: string; value: string }
+                ).value,
+            },
+        });
+
+        expect(logoutResponse.statusCode).toBe(204);
+        expect(memoryStoreDestroySpy.calledOnce).toBe(true);
+        expect(logoutResponse.cookies).toHaveLength(0);
+    });
+
+    test("should not logout not logged in rental manager", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: "/api/v1/auth/sessions",
+            cookies: undefined,
+        });
+
+        expect(response.statusCode).toBe(401);
+        expect(response.json().message).toEqual("Not authenticated");
+        expect(memoryStoreDestroySpy.notCalled).toBe(true);
+        expect(response.cookies).toHaveLength(0);
+    });
+});
