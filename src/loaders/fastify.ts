@@ -11,6 +11,7 @@ import rentalRoutes from "../modules/rental/rental.route";
 import unitTypeRoutes from "../modules/unitType/unitType.route";
 import rentalManagerRoutes from "../modules/rentalManager/rentalManager.route";
 import authRoutes from "../modules/auth/auth.route";
+import vehicleRoutes from "../modules/vehicle/vehicle.route";
 import { setupMailService } from "./mail";
 import generateRandomToken from "../utils/randomToken.util";
 import { isLoggedIn } from "../modules/auth/auth.middleware";
@@ -61,6 +62,7 @@ export default async function createFastifyServer(
     server.register(authRoutes, { prefix: "/api/v1/auth" });
     server.register(rentalRoutes, { prefix: "/api/v1/rentals" });
     server.register(rentalManagerRoutes, { prefix: "/api/v1/rental-managers" });
+    server.register(vehicleRoutes, { prefix: "/api/v1/vehicles" });
     server.register(unitTypeRoutes, { prefix: "/api/v1/unit-types" });
 
     server.get("/", async () => {
