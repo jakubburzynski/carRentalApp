@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { getAllUnitTypes } from "./unitType.controller";
+
 import { getAllUnitTypesResponse } from "./unitType.schema";
+import { findAllUnitTypes } from "./unitType.service";
 
 export default async function unitTypeRoutes(server: FastifyInstance) {
     server.get(
@@ -12,6 +13,9 @@ export default async function unitTypeRoutes(server: FastifyInstance) {
                 },
             },
         },
-        getAllUnitTypes,
+        async (request, reply) => {
+            const unitTypes = await findAllUnitTypes();
+            return reply.status(200).send(unitTypes);
+        },
     );
 }

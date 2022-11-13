@@ -1,12 +1,14 @@
 import { FastifyInstance } from "fastify";
-import { postCreateRental } from "./rental.controller";
+
 import {
+    PostCreateRentalBody,
     postCreateRentalBody,
     postCreateRentalResponse,
 } from "./rental.schema";
+import { createRental } from "./rental.service";
 
 export default async function rentalRoutes(server: FastifyInstance) {
-    server.post(
+    server.post<{ Body: PostCreateRentalBody }>(
         "/",
         {
             schema: {
@@ -16,6 +18,12 @@ export default async function rentalRoutes(server: FastifyInstance) {
                 },
             },
         },
-        postCreateRental,
+        async (request, reply) => {
+            const rental = await createRental({
+                name: request.body.name,
+                unitTypeUuid: request.body.unitTypeUuid,
+            });
+            return reply.status(201).send(rental);
+        },
     );
 }

@@ -1,20 +1,26 @@
 import { FastifyInstance } from "fastify";
 
 import {
+    PostRegisterRentalManagerBody,
     postRegisterRentalManagerBody,
     postRegisterRentalManagerResponse,
+    PutActivateRentalManagerBody,
     putActivateRentalManagerBody,
+    PutActivateRentalManagerParams,
     putActivateRentalManagerParams,
+    PutActivateRentalManagerQuery,
     putActivateRentalManagerQuery,
     putActivateRentalManagerResponse,
 } from "./rentalManager.schema";
 import {
-    postRegisterRentalManager,
-    putActivateRentalManager,
-} from "./rentalManager.controller";
+    activateRentalManager,
+    registerRentalManager,
+} from "./rentalManager.service";
 
 export default async function rentalManagerRoutes(server: FastifyInstance) {
-    server.post(
+    server.post<{
+        Body: PostRegisterRentalManagerBody;
+    }>(
         "/",
         {
             schema: {
@@ -24,10 +30,22 @@ export default async function rentalManagerRoutes(server: FastifyInstance) {
                 },
             },
         },
-        postRegisterRentalManager,
+        async (request, reply) => {
+            const rentalManager = await registerRentalManager({
+                name: request.body.name,
+                email: request.body.email,
+                password: request.body.password,
+                rentalUuid: request.body.rentalUuid,
+            });
+            return reply.status(201).send(rentalManager);
+        },
     );
 
-    server.put(
+    server.put<{
+        Body: PutActivateRentalManagerBody;
+        Params: PutActivateRentalManagerParams;
+        Querystring: PutActivateRentalManagerQuery;
+    }>(
         "/:uuid/active",
         {
             schema: {
@@ -39,6 +57,15 @@ export default async function rentalManagerRoutes(server: FastifyInstance) {
                 },
             },
         },
-        putActivateRentalManager,
+        async (request, reply) => {
+            await activateRentalManager(
+                request.params.uuid,
+                request.query.token,
+            );
+            return reply
+                .status(204)
+                .header("Referrer-Policy", "no-referrer")
+                .send();
+        },
     );
 }
