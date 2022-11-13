@@ -78,11 +78,11 @@ model Vehicle {
   brand String @db.VarChar(30)
   model String @db.VarChar(50)
   year Int
-  description String
+  description String?
   mileage Int
   licensePlate String @db.VarChar(20)
   pricePerDay Decimal @db.Decimal
-  name String @db.VarChar(50)
+  name String? @db.VarChar(50)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   fuelType FuelType @relation(fields: [fuelTypeId], references: [id])

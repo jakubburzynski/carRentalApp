@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Vehicle" ALTER COLUMN "description" DROP NOT NULL,
+ALTER COLUMN "name" DROP NOT NULL;
