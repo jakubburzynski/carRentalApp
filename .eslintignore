@@ -3,3 +3,7 @@ node_modules
 build
 **/*.prisma
 **/*.sql
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
