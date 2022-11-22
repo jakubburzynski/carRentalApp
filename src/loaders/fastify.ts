@@ -71,9 +71,5 @@ export default async function createFastifyServer(
     server.register(vehicleRoutes, { prefix: "/api/v1/vehicles" });
     server.register(unitTypeRoutes, { prefix: "/api/v1/unit-types" });
 
-    server.get("/", async () => {
-        return { hello: "world" };
-    });
-
     return server;
 }
