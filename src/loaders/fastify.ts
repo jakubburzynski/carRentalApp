@@ -3,7 +3,9 @@ import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { PrismaClient, Rental, RentalManager } from "@prisma/client";
 import fastifyCookie from "@fastify/cookie";
 import fastifySession from "@fastify/session";
+import fastifyMultipart from "@fastify/multipart";
 import fastifyAuth, { FastifyAuthFunction } from "@fastify/auth";
+import { S3Client } from "@aws-sdk/client-s3";
 
 import envPlugin, { EnvConfig } from "./env";
 import prismaPlugin from "./prisma";
@@ -15,12 +17,14 @@ import vehicleRoutes from "../modules/vehicle/vehicle.route";
 import { setupMailService } from "./mail";
 import generateRandomToken from "../utils/randomToken.util";
 import { isLoggedIn } from "../modules/auth/auth.middleware";
+import S3Plugin from "./s3";
 
 declare module "fastify" {
     export interface FastifyInstance {
         config: EnvConfig;
         prisma: PrismaClient;
         isLoggedIn: FastifyAuthFunction;
+        s3: S3Client;
     }
     export interface Session {
         authenticated: boolean;
@@ -55,6 +59,8 @@ export default async function createFastifyServer(
         secret: await generateRandomToken(64),
         saveUninitialized: false,
     });
+    server.register(fastifyMultipart);
+    server.register(S3Plugin);
     server.decorate("isLoggedIn", isLoggedIn);
     server.register(fastifyAuth);
     setupMailService(server.config);
