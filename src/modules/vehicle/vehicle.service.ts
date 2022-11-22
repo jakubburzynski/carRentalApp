@@ -71,3 +71,11 @@ export async function createVehicle(
 
     return assureVehicleHasName(createdVehicle);
 }
+
+export async function findVehicleByUuid(uuid: string) {
+    return prisma.vehicle.findUnique({
+        where: {
+            uuid,
+        },
+    });
+}
