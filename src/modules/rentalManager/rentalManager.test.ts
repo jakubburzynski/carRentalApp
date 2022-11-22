@@ -13,6 +13,7 @@ import { Rental, RentalManager } from "@prisma/client";
 import sinon, { SinonStubbedMember, SinonSpiedMember } from "sinon";
 import argon2 from "argon2";
 
+import cleanupDatabase from "../../../test/utils/cleanupDatabase";
 import createFastifyServer from "../../loaders/fastify";
 import uuidRegex from "../../utils/uuidRegex.util";
 import passwordRegex from "../../utils/passwordRegex.util";
@@ -40,8 +41,7 @@ describe("POST /api/v1/rental-managers", () => {
         randomTokenSpy = sinon.spy(randomToken, "default");
         mailSendStub = sinon.stub(mailingService, "send").resolves();
         app = await createFastifyServer();
-        await app.prisma.rental.deleteMany();
-        await app.prisma.rentalManager.deleteMany();
+        await cleanupDatabase(app.prisma);
         const unitType = await app.prisma.unitType.findFirstOrThrow();
         rental = await app.prisma.rental.create({
             data: {
@@ -62,7 +62,7 @@ describe("POST /api/v1/rental-managers", () => {
     });
 
     afterAll(async () => {
-        await app.prisma.rentalManager.deleteMany();
+        await cleanupDatabase(app.prisma);
         argon2HashSpy.restore();
         randomTokenSpy.restore();
         mailSendStub.restore();
@@ -424,8 +424,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     beforeAll(async () => {
         mailSendStub = sinon.stub(mailingService, "send").resolves();
         app = await createFastifyServer();
-        await app.prisma.rental.deleteMany();
-        await app.prisma.rentalManager.deleteMany();
+        await cleanupDatabase(app.prisma);
         const unitType = await app.prisma.unitType.findFirstOrThrow();
         rental = await app.prisma.rental.create({
             data: {
@@ -446,7 +445,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     });
 
     afterAll(async () => {
-        await app.prisma.rentalManager.deleteMany();
+        await cleanupDatabase(app.prisma);
         mailSendStub.restore();
         await app.close();
     });

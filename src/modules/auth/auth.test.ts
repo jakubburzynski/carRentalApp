@@ -13,6 +13,7 @@ import sinon, { SinonSpiedMember } from "sinon";
 import argon2 from "argon2";
 import { MemoryStore } from "@fastify/session";
 
+import cleanupDatabase from "../../../test/utils/cleanupDatabase";
 import createFastifyServer from "../../loaders/fastify";
 import * as rentalManagerService from "../rentalManager/rentalManager.service";
 
@@ -47,13 +48,12 @@ describe("POST /api/v1/auth/sessions", () => {
 
     beforeAll(async () => {
         app = await createFastifyServer();
+        await cleanupDatabase(app.prisma);
         memoryStoreSetSpy = sinon.spy(MemoryStore.prototype, "set");
         findRentalManagerByLoginCredentialsSpy = sinon.spy(
             rentalManagerService,
             "findRentalManagerByLoginCredentials",
         );
-        await app.prisma.rental.deleteMany();
-        await app.prisma.rentalManager.deleteMany();
         const unitType = await app.prisma.unitType.findFirstOrThrow();
         rental = await app.prisma.rental.create({
             data: {
@@ -74,9 +74,9 @@ describe("POST /api/v1/auth/sessions", () => {
     });
 
     afterAll(async () => {
-        await app.prisma.rentalManager.deleteMany();
         memoryStoreSetSpy.restore();
         findRentalManagerByLoginCredentialsSpy.restore();
+        await cleanupDatabase(app.prisma);
         await app.close();
     });
 
@@ -312,8 +312,7 @@ describe("DELETE /api/v1/auth/sessions", () => {
     beforeAll(async () => {
         app = await createFastifyServer();
         memoryStoreDestroySpy = sinon.spy(MemoryStore.prototype, "destroy");
-        await app.prisma.rental.deleteMany();
-        await app.prisma.rentalManager.deleteMany();
+        await cleanupDatabase(app.prisma);
         const unitType = await app.prisma.unitType.findFirstOrThrow();
         rental = await app.prisma.rental.create({
             data: {
@@ -333,7 +332,7 @@ describe("DELETE /api/v1/auth/sessions", () => {
     });
 
     afterAll(async () => {
-        await app.prisma.rentalManager.deleteMany();
+        await cleanupDatabase(app.prisma);
         memoryStoreDestroySpy.restore();
         await app.close();
     });

@@ -11,13 +11,14 @@ import { UnitType } from "@prisma/client";
 
 import createFastifyServer from "../../loaders/fastify";
 import uuidRegex from "../../utils/uuidRegex.util";
+import cleanupDatabase from "../../../test/utils/cleanupDatabase";
 
 describe("POST /api/v1/rentals", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let unitTypes: UnitType[];
     beforeAll(async () => {
         app = await createFastifyServer();
-        await app.prisma.rental.deleteMany();
+        await cleanupDatabase(app.prisma);
         unitTypes = await app.prisma.unitType.findMany();
         if (unitTypes.length < 2) {
             throw new Error("Not enough unit types in the database");
@@ -28,6 +29,7 @@ describe("POST /api/v1/rentals", () => {
     });
 
     afterAll(async () => {
+        await cleanupDatabase(app.prisma);
         await app.close();
     });
 
