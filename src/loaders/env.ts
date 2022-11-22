@@ -11,6 +11,10 @@ const initialEnvSchema = Type.Object({
     SERVER_PORT: Type.Number({ default: 3000 }),
     SERVER_HOST: Type.String({ default: "localhost" }),
     SERVER_HTTPS: Type.Boolean({ default: false }),
+    S3_ACCESS_KEY_ID: Type.String(),
+    S3_SECRET_ACCESS_KEY: Type.String(),
+    S3_BUCKET_NAME: Type.String(),
+    S3_REGION: Type.String(),
 });
 type InitialEnvSchema = Static<typeof initialEnvSchema>;
 const initialEnvConfig = envSchema<InitialEnvSchema>({
