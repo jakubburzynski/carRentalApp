@@ -14,10 +14,10 @@ import unitTypeRoutes from "../modules/unitType/unitType.route";
 import rentalManagerRoutes from "../modules/rentalManager/rentalManager.route";
 import authRoutes from "../modules/auth/auth.route";
 import vehicleRoutes from "../modules/vehicle/vehicle.route";
-import { setupMailService } from "./mail";
+import mailPlugin, { MailingService } from "./mail";
 import generateRandomToken from "../utils/randomToken.util";
-import { isLoggedIn } from "../modules/auth/auth.middleware";
-import S3Plugin from "./s3";
+import authMiddlewarePlugin from "../modules/auth/auth.middleware";
+import s3Plugin from "./s3";
 
 declare module "fastify" {
     export interface FastifyInstance {
@@ -25,6 +25,7 @@ declare module "fastify" {
         prisma: PrismaClient;
         isLoggedIn: FastifyAuthFunction;
         s3: S3Client;
+        mail: MailingService;
     }
     export interface Session {
         authenticated: boolean;
@@ -44,6 +45,7 @@ export default async function createFastifyServer(
             },
         },
     }).withTypeProvider<TypeBoxTypeProvider>();
+
     await server.register(prismaPlugin);
     server.register(envPlugin);
     await server.after();
@@ -60,10 +62,10 @@ export default async function createFastifyServer(
         saveUninitialized: false,
     });
     server.register(fastifyMultipart);
-    server.register(S3Plugin);
-    server.decorate("isLoggedIn", isLoggedIn);
     server.register(fastifyAuth);
-    setupMailService(server.config);
+    server.register(mailPlugin);
+    server.register(s3Plugin);
+    server.register(authMiddlewarePlugin);
 
     server.register(authRoutes, { prefix: "/api/v1/auth" });
     server.register(rentalRoutes, { prefix: "/api/v1/rentals" });

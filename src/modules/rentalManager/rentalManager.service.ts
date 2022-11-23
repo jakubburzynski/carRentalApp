@@ -3,7 +3,7 @@ import { RentalManager } from "@prisma/client";
 
 import { prisma } from "../../loaders/prisma";
 import generateRandomToken from "../../utils/randomToken.util";
-import mailingService from "../../loaders/mail";
+import { mailingService } from "../../loaders/mail";
 import { ProcessingException } from "../../utils/processingException.util";
 import { findRentalByUuid } from "../rental/rental.service";
 

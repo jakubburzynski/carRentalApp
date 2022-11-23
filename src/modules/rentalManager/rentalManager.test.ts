@@ -17,7 +17,7 @@ import cleanupDatabase from "../../../test/utils/cleanupDatabase";
 import createFastifyServer from "../../loaders/fastify";
 import uuidRegex from "../../utils/uuidRegex.util";
 import passwordRegex from "../../utils/passwordRegex.util";
-import mailingService from "../../loaders/mail";
+import { MailingService } from "../../loaders/mail";
 import * as randomToken from "../../utils/randomToken.util";
 
 describe("POST /api/v1/rental-managers", () => {
@@ -25,7 +25,7 @@ describe("POST /api/v1/rental-managers", () => {
     let rental: Rental;
     let argon2HashSpy: SinonSpiedMember<typeof argon2.hash>;
     let randomTokenSpy: SinonSpiedMember<typeof randomToken.default>;
-    let mailSendStub: SinonStubbedMember<typeof mailingService.send>;
+    let mailSendStub: SinonStubbedMember<typeof MailingService.prototype.send>;
 
     const examplePassword = "Q2Fz Zj{d";
     const fakeDate = new Date("2022-01-02T01:02:03Z");
@@ -39,7 +39,7 @@ describe("POST /api/v1/rental-managers", () => {
     beforeAll(async () => {
         argon2HashSpy = sinon.spy(argon2, "hash");
         randomTokenSpy = sinon.spy(randomToken, "default");
-        mailSendStub = sinon.stub(mailingService, "send").resolves();
+        mailSendStub = sinon.stub(MailingService.prototype, "send").resolves();
         app = await createFastifyServer();
         await cleanupDatabase(app.prisma);
         const unitType = await app.prisma.unitType.findFirstOrThrow();
@@ -394,7 +394,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
     let rentalManager: RentalManager;
-    let mailSendStub: SinonStubbedMember<typeof mailingService.send>;
+    let mailSendStub: SinonStubbedMember<typeof MailingService.prototype.send>;
 
     const fakeDate = new Date("2022-01-02T01:02:03Z");
     const payload = { active: true };
@@ -422,7 +422,7 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     });
 
     beforeAll(async () => {
-        mailSendStub = sinon.stub(mailingService, "send").resolves();
+        mailSendStub = sinon.stub(MailingService.prototype, "send").resolves();
         app = await createFastifyServer();
         await cleanupDatabase(app.prisma);
         const unitType = await app.prisma.unitType.findFirstOrThrow();
