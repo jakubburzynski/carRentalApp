@@ -1,6 +1,7 @@
-import { FastifyReply, FastifyRequest } from "fastify";
+import { FastifyPluginCallback, FastifyReply, FastifyRequest } from "fastify";
+import fp from "fastify-plugin";
 
-export function isLoggedIn(
+function isLoggedIn(
     request: FastifyRequest,
     reply: FastifyReply,
     done: (error?: Error) => void,
@@ -10,3 +11,11 @@ export function isLoggedIn(
     }
     done();
 }
+
+const authMiddlewarePlugin: FastifyPluginCallback = (server, options, done) => {
+    server.decorate("isLoggedIn", isLoggedIn);
+
+    done();
+};
+
+export default fp(authMiddlewarePlugin);
