@@ -37,7 +37,7 @@ export default async function vehicleRoutes(server: FastifyInstance) {
                 licensePlate: request.body.licensePlate,
                 pricePerDay: new Prisma.Decimal(request.body.pricePerDay),
                 name: request.body.name || null,
-                rentalUuid: request.body.rentalUuid,
+                rentalUuid: request.session.rental.uuid,
                 fuelTypeUuid: request.body.fuelTypeUuid,
             });
             return reply.status(201).send(vehicle);

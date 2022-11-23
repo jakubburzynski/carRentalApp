@@ -9,7 +9,6 @@ export const postCreateVehicleBody = Type.Object({
     licensePlate: Type.String({ minLength: 1, maxLength: 20 }),
     pricePerDay: Type.Number({ minimum: 1 }),
     name: Type.Optional(Type.String({ minLength: 3 })),
-    rentalUuid: Type.String({ format: "uuid" }),
     fuelTypeUuid: Type.String({ format: "uuid" }),
 });
 
