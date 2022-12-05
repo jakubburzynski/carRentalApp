@@ -1105,3 +1105,188 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         });
     });
 });
+
+describe("POST /api/v1/vehicles/:uuid/equipment", () => {
+    let app: Awaited<ReturnType<typeof createFastifyServer>>;
+    let rental: Rental;
+    let rentalManager: RentalManager;
+    let fuelTypes: FuelType[];
+    let vehicle: Vehicle;
+    let sessionId: string;
+
+    const examplePassword = "Q2Fz Zj{d";
+
+    beforeAll(async () => {
+        app = await createFastifyServer();
+        await cleanupDatabase(app.prisma);
+        const unitType = await app.prisma.unitType.findFirstOrThrow();
+        rental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
+        rentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
+            },
+        });
+        fuelTypes = await app.prisma.fuelType.findMany();
+        vehicle = await app.prisma.vehicle.create({
+            data: {
+                brand: faker.vehicle.manufacturer(),
+                model: faker.vehicle.model(),
+                year: faker.datatype.number({ min: 1900, max: 2023 }),
+                licensePlate: faker.vehicle.vrm(),
+                mileage: faker.datatype.number({ min: 1, max: 1000000 }),
+                pricePerDay: faker.datatype.number({ min: 1, max: 15000 }),
+                description: faker.lorem.paragraph(),
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
+                fuelType: {
+                    connect: {
+                        id: fuelTypes[0].id,
+                    },
+                },
+            },
+        });
+        const loginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: rentalManager.email,
+                password: examplePassword,
+            },
+        });
+        sessionId = (
+            loginResponse.cookies[0] as { name: string; value: string }
+        ).value;
+    });
+
+    afterEach(async () => {
+        await app.prisma.vehicleEquipment.deleteMany();
+    });
+
+    afterAll(async () => {
+        await cleanupDatabase(app.prisma);
+        await app.close();
+    });
+
+    test("should create a vehicle equipment", async () => {
+        const payload = {
+            name: faker.commerce.product(),
+        };
+        const response = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/equipment`,
+            payload,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
+        expect(response.statusCode).toBe(201);
+        expect(response.json()).toEqual({
+            uuid: expect.stringMatching(uuidRegex),
+            name: payload.name,
+        });
+        expect(vehicleEquipment.length).toBe(1);
+        expect(vehicleEquipment[0].vehicleId).toBe(vehicle.id);
+    });
+
+    test("should not create a vehicle equipment with not existing vehicle", async () => {
+        const payload = {
+            name: faker.commerce.product(),
+        };
+        const response = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${faker.datatype.uuid()}/equipment`,
+            payload,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
+        expect(response.statusCode).toBe(409);
+        expect(response.json().message).toEqual("Invalid vehicle uuid");
+        expect(vehicleEquipment.length).toBe(0);
+    });
+
+    test("should not create a vehicle equipment if rental manager is not logged in", async () => {
+        const payload = {
+            name: faker.commerce.product(),
+        };
+        const response = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/equipment`,
+            payload,
+            cookies: undefined,
+        });
+
+        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
+        expect(response.statusCode).toBe(401);
+        expect(response.json().message).toEqual("Not authenticated");
+        expect(vehicleEquipment.length).toBe(0);
+    });
+
+    test("should check if equipment name is at least 2 character long", async () => {
+        const payload = {
+            name: "a",
+        };
+        const response = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/equipment`,
+            payload,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            "body/name must NOT have fewer than 2 characters",
+        );
+        expect(vehicleEquipment.length).toBe(0);
+    });
+
+    test("should check if vehicle uuid is a valid uuid", async () => {
+        const payload = {
+            name: faker.commerce.product(),
+        };
+        const response = await app.inject({
+            method: "POST",
+            url: "/api/v1/vehicles/123/equipment",
+            payload,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            'params/uuid must match format "uuid"',
+        );
+        expect(vehicleEquipment.length).toBe(0);
+    });
+});
