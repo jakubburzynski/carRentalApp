@@ -6,6 +6,11 @@ import bytes from "bytes";
 import {
     PostCreateVehicleBody,
     postCreateVehicleBody,
+    postCreateVehicleEquipmentBody,
+    PostCreateVehicleEquipmentBody,
+    postCreateVehicleEquipmentParams,
+    PostCreateVehicleEquipmentParams,
+    postCreateVehicleEquipmentResponse,
     postCreateVehicleResponse,
     postUploadVehiclePhotoParams,
     PostUploadVehiclePhotoParams,
@@ -14,6 +19,7 @@ import {
 import { createVehicle } from "./vehicle.service";
 import { uploadVehiclePhoto } from "../vehiclePhoto/vehiclePhoto.service";
 import isFastifyError from "../../utils/isFastifyError.util";
+import { createVehicleEquipment } from "../vehicleEquipment/vehicleEquipment.service";
 
 export default async function vehicleRoutes(server: FastifyInstance) {
     server.post<{ Body: PostCreateVehicleBody }>(
@@ -101,6 +107,30 @@ export default async function vehicleRoutes(server: FastifyInstance) {
                 photo,
             );
             return reply.status(201).send(vehiclePhoto);
+        },
+    );
+
+    server.post<{
+        Params: PostCreateVehicleEquipmentParams;
+        Body: PostCreateVehicleEquipmentBody;
+    }>(
+        "/:uuid/equipment",
+        {
+            preHandler: server.auth([server.isLoggedIn]),
+            schema: {
+                params: postCreateVehicleEquipmentParams,
+                body: postCreateVehicleEquipmentBody,
+                response: {
+                    201: postCreateVehicleEquipmentResponse,
+                },
+            },
+        },
+        async (request, reply) => {
+            const vehicleEquipment = await createVehicleEquipment({
+                name: request.body.name,
+                vehicleUuid: request.params.uuid,
+            });
+            return reply.status(201).send(vehicleEquipment);
         },
     );
 }

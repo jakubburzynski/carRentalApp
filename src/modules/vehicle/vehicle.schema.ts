@@ -36,3 +36,28 @@ export const postUploadVehiclePhotoResponse = Type.Object({
     url: Type.String({ format: "uri" }),
     position: Type.Number(),
 });
+
+export const postCreateVehicleEquipmentBody = Type.Object({
+    name: Type.String({ minLength: 2 }),
+});
+
+export type PostCreateVehicleEquipmentBody = Static<
+    typeof postCreateVehicleEquipmentBody
+>;
+
+export const postCreateVehicleEquipmentParams = Type.Object({
+    uuid: Type.String({ format: "uuid" }),
+});
+
+export type PostCreateVehicleEquipmentParams = Static<
+    typeof postCreateVehicleEquipmentParams
+>;
+
+export const postCreateVehicleEquipmentResponse = Type.Object({
+    uuid: Type.String({ format: "uuid" }),
+    name: Type.String(),
+});
+
+export type PostCreateVehicleEquipmentResponse = Static<
+    typeof postCreateVehicleEquipmentResponse
+>;
