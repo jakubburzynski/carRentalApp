@@ -1,4 +1,5 @@
 import { VehicleEquipment } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 import { prisma } from "../../loaders/prisma";
 import { ProcessingException } from "../../utils/processingException.util";
@@ -22,4 +23,42 @@ export async function createVehicleEquipment(
             },
         },
     });
+}
+
+export async function deleteVehicleEquipment(deletionData: {
+    rentalUuid: string;
+    vehicleUuid: string;
+    equipmentUuid: string;
+}) {
+    const equipment = await prisma.vehicleEquipment.findUnique({
+        where: {
+            uuid: deletionData.equipmentUuid,
+        },
+        include: {
+            vehicle: {
+                include: {
+                    rental: true,
+                },
+            },
+        },
+    });
+    if (!equipment) {
+        throw new ProcessingException(409, "Invalid equipment uuid");
+    }
+    if (equipment.vehicle.uuid !== deletionData.vehicleUuid) {
+        throw new ProcessingException(409, "Invalid vehicle uuid");
+    }
+    if (equipment.vehicle.rental.uuid !== deletionData.rentalUuid) {
+        throw new ProcessingException(
+            403,
+            "Not authorized to maintain this vehicle",
+        );
+    }
+
+    const deleteOperation = await prisma.vehicleEquipment.delete({
+        where: {
+            uuid: deletionData.equipmentUuid,
+        },
+    });
+    return deleteOperation;
 }
