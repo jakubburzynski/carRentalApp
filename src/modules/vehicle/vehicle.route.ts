@@ -4,6 +4,9 @@ import { MultipartFile } from "@fastify/multipart";
 import bytes from "bytes";
 
 import {
+    DeleteVehicleEquipmentParams,
+    deleteVehicleEquipmentParams,
+    deleteVehicleEquipmentResponse,
     PostCreateVehicleBody,
     postCreateVehicleBody,
     postCreateVehicleEquipmentBody,
@@ -19,7 +22,10 @@ import {
 import { createVehicle } from "./vehicle.service";
 import { uploadVehiclePhoto } from "../vehiclePhoto/vehiclePhoto.service";
 import isFastifyError from "../../utils/isFastifyError.util";
-import { createVehicleEquipment } from "../vehicleEquipment/vehicleEquipment.service";
+import {
+    createVehicleEquipment,
+    deleteVehicleEquipment,
+} from "../vehicleEquipment/vehicleEquipment.service";
 
 export default async function vehicleRoutes(server: FastifyInstance) {
     server.post<{ Body: PostCreateVehicleBody }>(
@@ -131,6 +137,27 @@ export default async function vehicleRoutes(server: FastifyInstance) {
                 vehicleUuid: request.params.uuid,
             });
             return reply.status(201).send(vehicleEquipment);
+        },
+    );
+
+    server.delete<{ Params: DeleteVehicleEquipmentParams }>(
+        "/:vehicleUuid/equipment/:equipmentUuid",
+        {
+            preHandler: server.auth([server.isLoggedIn]),
+            schema: {
+                params: deleteVehicleEquipmentParams,
+                response: {
+                    204: deleteVehicleEquipmentResponse,
+                },
+            },
+        },
+        async (request, reply) => {
+            await deleteVehicleEquipment({
+                vehicleUuid: request.params.vehicleUuid,
+                equipmentUuid: request.params.equipmentUuid,
+                rentalUuid: request.session.rental.uuid,
+            });
+            return reply.status(204).send();
         },
     );
 }

@@ -61,3 +61,18 @@ export const postCreateVehicleEquipmentResponse = Type.Object({
 export type PostCreateVehicleEquipmentResponse = Static<
     typeof postCreateVehicleEquipmentResponse
 >;
+
+export const deleteVehicleEquipmentParams = Type.Object({
+    vehicleUuid: Type.String({ format: "uuid" }),
+    equipmentUuid: Type.String({ format: "uuid" }),
+});
+
+export type DeleteVehicleEquipmentParams = Static<
+    typeof deleteVehicleEquipmentParams
+>;
+
+export const deleteVehicleEquipmentResponse = Type.Null();
+
+export type DeleteVehicleEquipmentResponse = Static<
+    typeof deleteVehicleEquipmentResponse
+>;
