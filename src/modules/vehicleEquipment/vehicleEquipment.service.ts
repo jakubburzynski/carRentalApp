@@ -1,16 +1,24 @@
 import { VehicleEquipment } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 import { prisma } from "../../loaders/prisma";
 import { ProcessingException } from "../../utils/processingException.util";
 import { findVehicleByUuid } from "../vehicle/vehicle.service";
 
 export async function createVehicleEquipment(
-    equipment: Pick<VehicleEquipment, "name"> & { vehicleUuid: string },
+    equipment: Pick<VehicleEquipment, "name"> & {
+        vehicleUuid: string;
+        rentalUuid: string;
+    },
 ) {
-    const vehicle = await findVehicleByUuid(equipment.vehicleUuid);
+    const vehicle = await findVehicleByUuid(equipment.vehicleUuid, true);
     if (!vehicle) {
         throw new ProcessingException(409, "Invalid vehicle uuid");
+    }
+    if (vehicle.rental.uuid !== equipment.rentalUuid) {
+        throw new ProcessingException(
+            403,
+            "Not authorized to maintain this vehicle",
+        );
     }
 
     return prisma.vehicleEquipment.create({

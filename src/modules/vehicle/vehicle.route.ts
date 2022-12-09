@@ -135,6 +135,7 @@ export default async function vehicleRoutes(server: FastifyInstance) {
             const vehicleEquipment = await createVehicleEquipment({
                 name: request.body.name,
                 vehicleUuid: request.params.uuid,
+                rentalUuid: request.session.rental.uuid,
             });
             return reply.status(201).send(vehicleEquipment);
         },
