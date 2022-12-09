@@ -110,6 +110,7 @@ export default async function vehicleRoutes(server: FastifyInstance) {
 
             const vehiclePhoto = await uploadVehiclePhoto(
                 request.params.uuid,
+                request.session.rental.uuid,
                 photo,
             );
             return reply.status(201).send(vehiclePhoto);

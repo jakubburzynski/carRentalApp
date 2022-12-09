@@ -12,6 +12,7 @@ import isFastifyError from "../../utils/isFastifyError.util";
 
 export async function uploadVehiclePhoto(
     vehicleUuid: string,
+    rentalUuid: string,
     photo: MultipartFile,
 ) {
     if (photo.mimetype !== "image/jpeg" && photo.mimetype !== "image/png") {
@@ -21,9 +22,15 @@ export async function uploadVehiclePhoto(
         );
     }
 
-    const vehicle = await findVehicleByUuid(vehicleUuid);
+    const vehicle = await findVehicleByUuid(vehicleUuid, true);
     if (!vehicle) {
         throw new ProcessingException(409, "Invalid vehicle uuid");
+    }
+    if (vehicle.rental.uuid !== rentalUuid) {
+        throw new ProcessingException(
+            403,
+            "Not authorized to maintain this vehicle",
+        );
     }
 
     let photoBuffer: Buffer | undefined;
