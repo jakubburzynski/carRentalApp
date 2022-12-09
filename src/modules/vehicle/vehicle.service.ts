@@ -1,4 +1,4 @@
-import { Vehicle } from "@prisma/client";
+import { Rental, Vehicle } from "@prisma/client";
 
 import { prisma } from "../../loaders/prisma";
 import { ProcessingException } from "../../utils/processingException.util";
@@ -71,11 +71,26 @@ export async function createVehicle(
 
     return assureVehicleHasName(createdVehicle);
 }
-
-export async function findVehicleByUuid(uuid: string) {
+export async function findVehicleByUuid(
+    uuid: string,
+    includeRental?: false,
+): Promise<Vehicle | null>;
+export async function findVehicleByUuid(
+    uuid: string,
+    includeRental: true,
+): Promise<
+    | (Vehicle & {
+          rental: Rental;
+      })
+    | null
+>;
+export async function findVehicleByUuid(uuid: string, includeRental = false) {
     return prisma.vehicle.findUnique({
         where: {
             uuid,
+        },
+        include: {
+            rental: includeRental,
         },
     });
 }
