@@ -1116,10 +1116,13 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
 describe("POST /api/v1/vehicles/:uuid/equipment", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
+    let secondRental: Rental;
     let rentalManager: RentalManager;
+    let secondRentalManager: RentalManager;
     let fuelTypes: FuelType[];
     let vehicle: Vehicle;
     let sessionId: string;
+    let secondSessionId: string;
 
     const examplePassword = "Q2Fz Zj{d";
 
@@ -1128,6 +1131,16 @@ describe("POST /api/v1/vehicles/:uuid/equipment", () => {
         await cleanupDatabase(app.prisma);
         const unitType = await app.prisma.unitType.findFirstOrThrow();
         rental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
+        secondRental = await app.prisma.rental.create({
             data: {
                 name: faker.company.name(),
                 unitType: {
@@ -1148,6 +1161,21 @@ describe("POST /api/v1/vehicles/:uuid/equipment", () => {
                 rental: {
                     connect: {
                         id: rental.id,
+                    },
+                },
+            },
+        });
+        secondRentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: secondRental.id,
                     },
                 },
             },
@@ -1184,6 +1212,17 @@ describe("POST /api/v1/vehicles/:uuid/equipment", () => {
         });
         sessionId = (
             loginResponse.cookies[0] as { name: string; value: string }
+        ).value;
+        const secondLoginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: secondRentalManager.email,
+                password: examplePassword,
+            },
+        });
+        secondSessionId = (
+            secondLoginResponse.cookies[0] as { name: string; value: string }
         ).value;
     });
 
@@ -1255,6 +1294,27 @@ describe("POST /api/v1/vehicles/:uuid/equipment", () => {
         expect(vehicleEquipment.length).toBe(0);
     });
 
+    test("should check if currently logged in rental manager has rights to create equipment", async () => {
+        const payload = {
+            name: faker.commerce.product(),
+        };
+        const response = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/equipment`,
+            payload,
+            cookies: {
+                sessionId: secondSessionId,
+            },
+        });
+
+        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
+        expect(response.statusCode).toBe(403);
+        expect(response.json().message).toEqual(
+            "Not authorized to maintain this vehicle",
+        );
+        expect(vehicleEquipment.length).toBe(0);
+    });
+
     test("should check if equipment name is at least 2 character long", async () => {
         const payload = {
             name: "a",
@@ -1300,9 +1360,9 @@ describe("POST /api/v1/vehicles/:uuid/equipment", () => {
 
 describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
-    let firstRental: Rental;
-    let firstRentalManager: RentalManager;
-    let firstSessionId: string;
+    let rental: Rental;
+    let rentalManager: RentalManager;
+    let sessionId: string;
     let secondRental: Rental;
     let secondRentalManager: RentalManager;
     let secondSessionId: string;
@@ -1329,7 +1389,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
         app = await createFastifyServer();
         await cleanupDatabase(app.prisma);
         const unitType = await app.prisma.unitType.findFirstOrThrow();
-        firstRental = await app.prisma.rental.create({
+        rental = await app.prisma.rental.create({
             data: {
                 name: faker.company.name(),
                 unitType: {
@@ -1339,7 +1399,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
                 },
             },
         });
-        firstRentalManager = await app.prisma.rentalManager.create({
+        rentalManager = await app.prisma.rentalManager.create({
             data: {
                 name: faker.name.firstName(),
                 email: faker.internet.email(),
@@ -1349,7 +1409,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
                 activationTokenExpiration: null,
                 rental: {
                     connect: {
-                        id: firstRental.id,
+                        id: rental.id,
                     },
                 },
             },
@@ -1391,7 +1451,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
                 description: faker.lorem.paragraph(),
                 rental: {
                     connect: {
-                        id: firstRental.id,
+                        id: rental.id,
                     },
                 },
                 fuelType: {
@@ -1401,17 +1461,17 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
                 },
             },
         });
-        const firstLoginResponse = await app.inject({
+        const loginResponse = await app.inject({
             method: "POST",
             url: "/api/v1/auth/sessions",
             payload: {
-                email: firstRentalManager.email,
+                email: rentalManager.email,
                 password: examplePassword,
             },
             cookies: undefined,
         });
-        firstSessionId = (
-            firstLoginResponse.cookies[0] as { name: string; value: string }
+        sessionId = (
+            loginResponse.cookies[0] as { name: string; value: string }
         ).value;
         const secondLoginResponse = await app.inject({
             method: "POST",
@@ -1444,7 +1504,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
             method: "DELETE",
             url: `/api/v1/vehicles/${vehicle.uuid}/equipment/${equipment.uuid}`,
             cookies: {
-                sessionId: firstSessionId,
+                sessionId,
             },
         });
 
@@ -1461,7 +1521,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
                 vehicle.uuid
             }/equipment/${faker.datatype.uuid()}`,
             cookies: {
-                sessionId: firstSessionId,
+                sessionId,
             },
         });
 
@@ -1478,7 +1538,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
                 equipment.uuid
             }`,
             cookies: {
-                sessionId: firstSessionId,
+                sessionId,
             },
         });
 
@@ -1523,7 +1583,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
             method: "DELETE",
             url: `/api/v1/vehicles/${vehicle.uuid}/equipment/123`,
             cookies: {
-                sessionId: firstSessionId,
+                sessionId,
             },
         });
 
@@ -1540,7 +1600,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => 
             method: "DELETE",
             url: `/api/v1/vehicles/123/equipment/${equipment.uuid}`,
             cookies: {
-                sessionId: firstSessionId,
+                sessionId,
             },
         });
 
