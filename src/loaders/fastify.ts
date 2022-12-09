@@ -18,6 +18,8 @@ import mailPlugin, { MailingService } from "./mail";
 import generateRandomToken from "../utils/randomToken.util";
 import authMiddlewarePlugin from "../modules/auth/auth.middleware";
 import s3Plugin from "./s3";
+import vehiclePhotoRoutes from "../modules/vehiclePhoto/vehiclePhoto.route";
+import vehicleEquipmentRoutes from "../modules/vehicleEquipment/vehicleEquipment.route";
 
 declare module "fastify" {
     export interface FastifyInstance {
@@ -71,6 +73,8 @@ export default async function createFastifyServer(
     server.register(rentalRoutes, { prefix: "/api/v1/rentals" });
     server.register(rentalManagerRoutes, { prefix: "/api/v1/rental-managers" });
     server.register(vehicleRoutes, { prefix: "/api/v1/vehicles" });
+    server.register(vehiclePhotoRoutes, { prefix: "/api/v1/vehicles" });
+    server.register(vehicleEquipmentRoutes, { prefix: "/api/v1/vehicles" });
     server.register(unitTypeRoutes, { prefix: "/api/v1/unit-types" });
 
     return server;
