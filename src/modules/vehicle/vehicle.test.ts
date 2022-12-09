@@ -514,13 +514,16 @@ describe("POST /api/v1/vehicles", () => {
 describe("POST /api/v1/vehicles/:uuid/photos", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
+    let secondRental: Rental;
     let rentalManager: RentalManager;
+    let secondRentalManager: RentalManager;
     let fuelTypes: FuelType[];
     let vehicle: Vehicle;
     let secondVehicle: Vehicle;
     let s3SendStub: SinonStubbedMember<typeof S3Client.prototype.send>;
     let cryptoRandomUUIDSpy: SinonSpiedMember<typeof crypto.randomUUID>;
     let sessionId: string;
+    let secondSessionId: string;
     let s3BucketBaseUrl: string;
 
     const loadPhotoFromAssets = (fileName: string): ReadStream => {
@@ -554,6 +557,16 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
                 },
             },
         });
+        secondRental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
         rentalManager = await app.prisma.rentalManager.create({
             data: {
                 name: faker.name.firstName(),
@@ -565,6 +578,21 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
                 rental: {
                     connect: {
                         id: rental.id,
+                    },
+                },
+            },
+        });
+        secondRentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: secondRental.id,
                     },
                 },
             },
@@ -622,6 +650,17 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         });
         sessionId = (
             loginResponse.cookies[0] as { name: string; value: string }
+        ).value;
+        const secondLoginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: secondRentalManager.email,
+                password: examplePassword,
+            },
+        });
+        secondSessionId = (
+            secondLoginResponse.cookies[0] as { name: string; value: string }
         ).value;
         s3BucketBaseUrl = `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}`;
     });
@@ -932,6 +971,30 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         expect(response.json().message).toEqual("Not authenticated");
         expect(cryptoRandomUUIDSpy.notCalled).toBe(true);
         expect(vehiclePhotos.length).toEqual(0);
+        expect(s3SendStub.notCalled).toBe(true);
+    });
+
+    test("should check if currently logged in rental manager has rights to create equipment", async () => {
+        const form = new FormData();
+        form.append("photo", loadPngVehiclePhoto());
+
+        const response = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos`,
+            payload: form,
+            headers: form.getHeaders(),
+            cookies: {
+                sessionId: secondSessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(403);
+        expect(response.json().message).toEqual(
+            "Not authorized to maintain this vehicle",
+        );
+        expect(vehiclePhotos.length).toEqual(0);
+        expect(cryptoRandomUUIDSpy.notCalled).toBe(true);
         expect(s3SendStub.notCalled).toBe(true);
     });
 
