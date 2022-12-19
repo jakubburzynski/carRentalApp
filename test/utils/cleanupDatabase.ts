@@ -9,6 +9,8 @@ const cleanupDatabase = async (prisma: PrismaClient) => {
     await prisma.vehicle.deleteMany();
     await prisma.rentalManager.deleteMany();
     await prisma.rental.deleteMany();
+
+    await prisma.$disconnect();
 };
 
 export default cleanupDatabase;
