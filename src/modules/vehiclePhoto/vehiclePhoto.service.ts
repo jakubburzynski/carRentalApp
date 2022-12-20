@@ -1,8 +1,9 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import { MultipartFile } from "@fastify/multipart";
 import { FastifyError } from "fastify";
 import bytes from "bytes";
+import { Prisma, VehiclePhoto, Vehicle, Rental } from "@prisma/client";
 
 import { prisma } from "../../loaders/prisma";
 import { s3, s3BucketName } from "../../loaders/s3";
@@ -74,14 +75,14 @@ export async function uploadVehiclePhoto(
         },
     });
 
-    const command = new PutObjectCommand({
-        Bucket: s3BucketName,
-        Key: fileName,
-        Body: photoBuffer,
-        ContentType: photo.mimetype,
-    });
-
-    const data = await s3.send(command);
+    const data = await s3.send(
+        new PutObjectCommand({
+            Bucket: s3BucketName,
+            Key: fileName,
+            Body: photoBuffer,
+            ContentType: photo.mimetype,
+        }),
+    );
     if (data["$metadata"].httpStatusCode !== 200) {
         await prisma.vehiclePhoto.delete({
             where: {
@@ -92,4 +93,63 @@ export async function uploadVehiclePhoto(
     }
 
     return createdVehiclePhoto;
+}
+
+export async function deleteVehiclePhoto(
+    vehicleUuid: string,
+    vehiclePhotoUuid: string,
+    rentalUuid: string,
+) {
+    await prisma.$transaction(async (tx) => {
+        let photoEntityToDelete: VehiclePhoto & {
+            vehicle: Vehicle & {
+                rental: Rental;
+            };
+        };
+        try {
+            photoEntityToDelete = await tx.vehiclePhoto.delete({
+                where: {
+                    uuid: vehiclePhotoUuid,
+                },
+                include: {
+                    vehicle: {
+                        include: {
+                            rental: true,
+                        },
+                    },
+                },
+            });
+        } catch (err) {
+            if (
+                err instanceof Prisma.PrismaClientKnownRequestError &&
+                err.code === "P2025"
+            ) {
+                throw new ProcessingException(404, "Invalid photo uuid");
+            }
+            throw err;
+        }
+
+        if (photoEntityToDelete.vehicle.uuid !== vehicleUuid) {
+            throw new ProcessingException(404, "Invalid vehicle uuid");
+        }
+        if (photoEntityToDelete.vehicle.rental.uuid !== rentalUuid) {
+            throw new ProcessingException(
+                403,
+                "Not authorized to maintain this vehicle's photos",
+            );
+        }
+
+        const extension = photoEntityToDelete.url.slice(
+            photoEntityToDelete.url.lastIndexOf("."),
+        );
+        const photoDeletionData = await s3.send(
+            new DeleteObjectCommand({
+                Bucket: s3BucketName,
+                Key: `${vehicleUuid}/${vehiclePhotoUuid}${extension}`,
+            }),
+        );
+        if (photoDeletionData.$metadata.httpStatusCode !== 204) {
+            throw new ProcessingException(500, "Error while deleting photo");
+        }
+    });
 }
