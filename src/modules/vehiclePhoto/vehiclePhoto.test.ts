@@ -714,7 +714,7 @@ describe("DELETE /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
     beforeAll(async () => {
         s3SendStub = sinon.stub(S3Client.prototype, "send").resolves({
             $metadata: {
-                httpStatusCode: 200,
+                httpStatusCode: 204,
             },
         });
         app = await createFastifyServer();
