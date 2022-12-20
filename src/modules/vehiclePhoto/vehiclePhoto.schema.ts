@@ -13,3 +13,12 @@ export const postUploadVehiclePhotoResponse = Type.Object({
     url: Type.String({ format: "uri" }),
     position: Type.Number(),
 });
+
+export const deleteVehiclePhotoParams = Type.Object({
+    vehicleUuid: Type.String({ format: "uuid" }),
+    photoUuid: Type.String({ format: "uuid" }),
+});
+
+export type DeleteVehiclePhotoParams = Static<typeof deleteVehiclePhotoParams>;
+
+export const deleteVehiclePhotoResponse = Type.Null();

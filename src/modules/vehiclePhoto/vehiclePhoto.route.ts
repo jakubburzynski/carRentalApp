@@ -3,11 +3,14 @@ import { MultipartFile } from "@fastify/multipart";
 import bytes from "bytes";
 
 import {
+    deleteVehiclePhotoParams,
+    DeleteVehiclePhotoParams,
+    deleteVehiclePhotoResponse,
     postUploadVehiclePhotoParams,
     PostUploadVehiclePhotoParams,
     postUploadVehiclePhotoResponse,
 } from "./vehiclePhoto.schema";
-import { uploadVehiclePhoto } from "./vehiclePhoto.service";
+import { deleteVehiclePhoto, uploadVehiclePhoto } from "./vehiclePhoto.service";
 import isFastifyError from "../../utils/isFastifyError.util";
 
 export default async function vehiclePhotoRoutes(server: FastifyInstance) {
@@ -69,6 +72,27 @@ export default async function vehiclePhotoRoutes(server: FastifyInstance) {
                 photo,
             );
             return reply.status(201).send(vehiclePhoto);
+        },
+    );
+
+    server.delete<{ Params: DeleteVehiclePhotoParams }>(
+        "/:vehicleUuid/photos/:photoUuid",
+        {
+            preHandler: server.auth([server.isLoggedIn]),
+            schema: {
+                params: deleteVehiclePhotoParams,
+                response: {
+                    204: deleteVehiclePhotoResponse,
+                },
+            },
+        },
+        async (request, reply) => {
+            await deleteVehiclePhoto(
+                request.params.vehicleUuid,
+                request.params.photoUuid,
+                request.session.rental.uuid,
+            );
+            return reply.status(204).send();
         },
     );
 }
