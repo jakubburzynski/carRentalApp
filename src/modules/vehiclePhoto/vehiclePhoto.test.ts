@@ -3,18 +3,29 @@ import {
     describe,
     expect,
     beforeAll,
+    beforeEach,
     afterAll,
     afterEach,
 } from "@jest/globals";
 import { faker } from "@faker-js/faker";
-import { FuelType, Rental, RentalManager, Vehicle } from "@prisma/client";
+import {
+    FuelType,
+    Rental,
+    RentalManager,
+    Vehicle,
+    VehiclePhoto,
+} from "@prisma/client";
 import argon2 from "argon2";
 import FormData from "form-data";
 import path from "node:path";
 import sinon, { SinonSpiedMember, SinonStubbedMember } from "sinon";
 import crypto from "node:crypto";
 import { createReadStream, ReadStream } from "node:fs";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+    DeleteObjectCommand,
+    PutObjectCommand,
+    S3Client,
+} from "@aws-sdk/client-s3";
 
 import cleanupDatabase from "../../../test/utils/cleanupDatabase";
 import createFastifyServer from "../../loaders/fastify";
@@ -483,7 +494,7 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         expect(s3SendStub.notCalled).toBe(true);
     });
 
-    test("should check if currently logged in rental manager has rights to create equipment", async () => {
+    test("should check if currently logged in rental manager has rights to upload vehicle photo", async () => {
         const form = new FormData();
         form.append("photo", loadPngVehiclePhoto());
 
@@ -681,6 +692,310 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
             Key: `${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[0]}.png`,
             Body: expect.any(Buffer),
             ContentType: "image/png",
+        });
+    });
+});
+
+describe("DELETE /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
+    let app: Awaited<ReturnType<typeof createFastifyServer>>;
+    let rental: Rental;
+    let secondRental: Rental;
+    let rentalManager: RentalManager;
+    let secondRentalManager: RentalManager;
+    let fuelTypes: FuelType[];
+    let vehicle: Vehicle;
+    let vehiclePhoto: VehiclePhoto;
+    let s3SendStub: SinonStubbedMember<typeof S3Client.prototype.send>;
+    let sessionId: string;
+    let secondSessionId: string;
+
+    const examplePassword = "Q2Fz Zj{d";
+
+    beforeAll(async () => {
+        s3SendStub = sinon.stub(S3Client.prototype, "send").resolves({
+            $metadata: {
+                httpStatusCode: 200,
+            },
+        });
+        app = await createFastifyServer();
+        await cleanupDatabase(app.prisma);
+        const unitType = await app.prisma.unitType.findFirstOrThrow();
+        rental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
+        secondRental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
+        rentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
+            },
+        });
+        secondRentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: secondRental.id,
+                    },
+                },
+            },
+        });
+        fuelTypes = await app.prisma.fuelType.findMany();
+        vehicle = await app.prisma.vehicle.create({
+            data: {
+                brand: faker.vehicle.manufacturer(),
+                model: faker.vehicle.model(),
+                year: faker.datatype.number({ min: 1900, max: 2023 }),
+                licensePlate: faker.vehicle.vrm(),
+                mileage: faker.datatype.number({ min: 1, max: 1000000 }),
+                pricePerDay: faker.datatype.number({ min: 1, max: 15000 }),
+                description: faker.lorem.paragraph(),
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
+                fuelType: {
+                    connect: {
+                        id: fuelTypes[0].id,
+                    },
+                },
+            },
+        });
+        const loginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: rentalManager.email,
+                password: examplePassword,
+            },
+        });
+        sessionId = (
+            loginResponse.cookies[0] as { name: string; value: string }
+        ).value;
+        const secondLoginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: secondRentalManager.email,
+                password: examplePassword,
+            },
+        });
+        secondSessionId = (
+            secondLoginResponse.cookies[0] as { name: string; value: string }
+        ).value;
+    });
+
+    beforeEach(async () => {
+        const vehiclePhotoUuid = crypto.randomUUID();
+        vehiclePhoto = await app.prisma.vehiclePhoto.create({
+            data: {
+                uuid: vehiclePhotoUuid,
+                url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
+                position: 128,
+                vehicle: {
+                    connect: {
+                        id: vehicle.id,
+                    },
+                },
+            },
+        });
+    });
+
+    afterEach(async () => {
+        s3SendStub.resetHistory();
+        await app.prisma.vehiclePhoto.deleteMany();
+    });
+
+    afterAll(async () => {
+        s3SendStub.restore();
+        await cleanupDatabase(app.prisma);
+        await app.close();
+    });
+
+    test("should delete a photo (both from S3 and database)", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${vehiclePhoto.uuid}`,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(204);
+        expect(response.body).toEqual("");
+        expect(vehiclePhotos.length).toBe(0);
+        expect(s3SendStub.calledOnce).toBe(true);
+        expect(
+            (s3SendStub.lastCall.firstArg as DeleteObjectCommand).input,
+        ).toEqual({
+            Bucket: app.config.S3_BUCKET_NAME,
+            Key: `${vehicle.uuid}/${vehiclePhoto.uuid}.png`,
+        });
+    });
+
+    test("should check for not existing photo", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/${
+                vehicle.uuid
+            }/photos/${faker.datatype.uuid()}`,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(404);
+        expect(response.json().message).toEqual("Invalid photo uuid");
+        expect(vehiclePhotos.length).toBe(1);
+        expect(s3SendStub.notCalled).toBe(true);
+    });
+
+    test("should check for not existing vehicle", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/${faker.datatype.uuid()}/photos/${
+                vehiclePhoto.uuid
+            }`,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(404);
+        expect(response.json().message).toEqual("Invalid vehicle uuid");
+        expect(vehiclePhotos.length).toBe(1);
+        expect(s3SendStub.notCalled).toBe(true);
+    });
+
+    test("should not delete if rental manager is not logged in", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${vehiclePhoto.uuid}`,
+            cookies: undefined,
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(401);
+        expect(response.json().message).toEqual("Not authenticated");
+        expect(vehiclePhotos.length).toBe(1);
+        expect(s3SendStub.notCalled).toBe(true);
+    });
+
+    test("should check if currently logged in rental manager has rights to delete vehicle photo", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${vehiclePhoto.uuid}`,
+            cookies: {
+                sessionId: secondSessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(403);
+        expect(response.json().message).toEqual(
+            "Not authorized to maintain this vehicle's photos",
+        );
+        expect(vehiclePhotos.length).toBe(1);
+        expect(s3SendStub.notCalled).toBe(true);
+    });
+
+    test("should check if vehicleUuid param is a valid uuid", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/123/photos/${vehiclePhoto.uuid}`,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            'params/vehicleUuid must match format "uuid"',
+        );
+        expect(vehiclePhotos.length).toBe(1);
+        expect(s3SendStub.notCalled).toBe(true);
+    });
+
+    test("should check if photoUuid param is a valid uuid", async () => {
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/123`,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            'params/photoUuid must match format "uuid"',
+        );
+        expect(vehiclePhotos.length).toBe(1);
+        expect(s3SendStub.notCalled).toBe(true);
+    });
+
+    // from this place s3SendStub resolves with 500 status code
+    test("should not delete image entity if deleting from S3 fails", async () => {
+        s3SendStub.restore();
+        s3SendStub = sinon.stub(S3Client.prototype, "send").resolves({
+            $metadata: {
+                httpStatusCode: 500,
+            },
+        });
+
+        const response = await app.inject({
+            method: "DELETE",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${vehiclePhoto.uuid}`,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(response.statusCode).toBe(500);
+        expect(response.json().message).toEqual("Error while deleting photo");
+        expect(vehiclePhotos.length).toBe(1);
+        expect(s3SendStub.calledOnce).toBe(true);
+        expect(
+            (s3SendStub.lastCall.firstArg as DeleteObjectCommand).input,
+        ).toEqual({
+            Bucket: app.config.S3_BUCKET_NAME,
+            Key: `${vehicle.uuid}/${vehiclePhoto.uuid}.png`,
         });
     });
 });
