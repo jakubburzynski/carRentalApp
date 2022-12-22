@@ -62,37 +62,35 @@ export async function uploadVehiclePhoto(
             vehicleId: vehicle.id,
         },
     });
-    const createdVehiclePhoto = await prisma.vehiclePhoto.create({
-        data: {
-            uuid: photoEntityUuid,
-            position: 128 * (vehiclePhotoCount + 1),
-            url: photoUrl,
-            vehicle: {
-                connect: {
-                    id: vehicle.id,
+
+    return prisma.$transaction(async (tx) => {
+        const createdVehiclePhoto = await tx.vehiclePhoto.create({
+            data: {
+                uuid: photoEntityUuid,
+                position: 128 * (vehiclePhotoCount + 1),
+                url: photoUrl,
+                vehicle: {
+                    connect: {
+                        id: vehicle.id,
+                    },
                 },
             },
-        },
-    });
-
-    const data = await s3.send(
-        new PutObjectCommand({
-            Bucket: s3BucketName,
-            Key: fileName,
-            Body: photoBuffer,
-            ContentType: photo.mimetype,
-        }),
-    );
-    if (data["$metadata"].httpStatusCode !== 200) {
-        await prisma.vehiclePhoto.delete({
-            where: {
-                id: createdVehiclePhoto.id,
-            },
         });
-        throw new ProcessingException(500, "Error while uploading photo");
-    }
 
-    return createdVehiclePhoto;
+        const data = await s3.send(
+            new PutObjectCommand({
+                Bucket: s3BucketName,
+                Key: fileName,
+                Body: photoBuffer,
+                ContentType: photo.mimetype,
+            }),
+        );
+        if (data["$metadata"].httpStatusCode !== 200) {
+            throw new ProcessingException(500, "Error while uploading photo");
+        }
+
+        return createdVehiclePhoto;
+    });
 }
 
 export async function deleteVehiclePhoto(
