@@ -30,6 +30,11 @@ describe("POST /api/v1/rental-managers", () => {
     const examplePassword = "Q2Fz Zj{d";
     const fakeDate = new Date("2022-01-02T01:02:03Z");
 
+    const getLongFirstName = (): string => {
+        const possibleName = faker.name.firstName();
+        return possibleName.length < 3 ? getLongFirstName() : possibleName;
+    };
+
     beforeEach(() => {
         jest.useFakeTimers({
             advanceTimers: true,
@@ -75,7 +80,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should create a rental manager", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: examplePassword,
             rentalUuid: rental.uuid,
@@ -128,7 +133,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should not create a rental manager with not existing rental uuid", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: examplePassword,
             rentalUuid: faker.datatype.uuid(),
@@ -149,7 +154,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should not create more than one rental manager", async () => {
         const firstPayload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: examplePassword,
             rentalUuid: rental.uuid,
@@ -161,7 +166,7 @@ describe("POST /api/v1/rental-managers", () => {
         });
 
         const secondPayload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: examplePassword,
             rentalUuid: rental.uuid,
@@ -230,7 +235,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should check for invalid email", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: "invalidemail@",
             password: examplePassword,
             rentalUuid: rental.uuid,
@@ -276,7 +281,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should check if password has at least one small letter", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: "AA1!AA1!",
             rentalUuid: rental.uuid,
@@ -299,7 +304,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should check if password has at least one capital letter", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: "aa1!aa1!",
             rentalUuid: rental.uuid,
@@ -322,7 +327,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should check if password has at least one number", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: "Aa!!Aa!!",
             rentalUuid: rental.uuid,
@@ -345,7 +350,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should check if password has at least one special character", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: "Aa11Aa11",
             rentalUuid: rental.uuid,
@@ -368,7 +373,7 @@ describe("POST /api/v1/rental-managers", () => {
 
     test("should check if rentalUuid is a valid uuid", async () => {
         const payload = {
-            name: faker.name.firstName(),
+            name: getLongFirstName(),
             email: faker.internet.email(),
             password: examplePassword,
             rentalUuid: 123,
@@ -399,13 +404,18 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     const fakeDate = new Date("2022-01-02T01:02:03Z");
     const payload = { active: true };
 
+    const getLongFirstName = (): string => {
+        const possibleName = faker.name.firstName();
+        return possibleName.length < 3 ? getLongFirstName() : possibleName;
+    };
+
     beforeEach(async () => {
         jest.useFakeTimers({
             advanceTimers: true,
         }).setSystemTime(fakeDate);
         rentalManager = await app.prisma.rentalManager.create({
             data: {
-                name: faker.name.firstName(),
+                name: getLongFirstName(),
                 email: faker.internet.email(),
                 password: await argon2.hash("Q2Fz Zj{d"),
                 activationToken: await randomToken.default(32),
