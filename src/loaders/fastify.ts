@@ -14,12 +14,13 @@ import unitTypeRoutes from "../modules/unitType/unitType.route";
 import rentalManagerRoutes from "../modules/rentalManager/rentalManager.route";
 import authRoutes from "../modules/auth/auth.route";
 import vehicleRoutes from "../modules/vehicle/vehicle.route";
+import vehiclePhotoRoutes from "../modules/vehiclePhoto/vehiclePhoto.route";
+import vehicleEquipmentRoutes from "../modules/vehicleEquipment/vehicleEquipment.route";
+import fuelTypeRoutes from "../modules/fuelType/fuelType.route";
 import mailPlugin, { MailingService } from "./mail";
 import generateRandomToken from "../utils/randomToken.util";
 import authMiddlewarePlugin from "../modules/auth/auth.middleware";
 import s3Plugin from "./s3";
-import vehiclePhotoRoutes from "../modules/vehiclePhoto/vehiclePhoto.route";
-import vehicleEquipmentRoutes from "../modules/vehicleEquipment/vehicleEquipment.route";
 
 declare module "fastify" {
     export interface FastifyInstance {
@@ -76,6 +77,7 @@ export default async function createFastifyServer(
     server.register(vehiclePhotoRoutes, { prefix: "/api/v1/vehicles" });
     server.register(vehicleEquipmentRoutes, { prefix: "/api/v1/vehicles" });
     server.register(unitTypeRoutes, { prefix: "/api/v1/unit-types" });
+    server.register(fuelTypeRoutes, { prefix: "/api/v1/fuel-types" });
 
     return server;
 }
