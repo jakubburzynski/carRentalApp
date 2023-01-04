@@ -395,14 +395,14 @@ describe("POST /api/v1/rental-managers", () => {
     });
 });
 
-describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
+describe("PATCH /api/v1/rental-managers/:uuid", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
     let rentalManager: RentalManager;
     let mailSendStub: SinonStubbedMember<typeof MailingService.prototype.send>;
 
     const fakeDate = new Date("2022-01-02T01:02:03Z");
-    const payload = { active: true };
+    const payload = [{ op: "replace", path: "/active", value: true }];
 
     const getLongFirstName = (): string => {
         const possibleName = faker.name.firstName();
@@ -462,8 +462,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should activate rental manager", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
             payload,
         });
 
@@ -490,13 +490,13 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should check for already activated rental manager", async () => {
         await app.inject({
-            method: "PUT",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
             payload,
         });
         const secondResponse = await app.inject({
-            method: "PUT",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
             payload,
         });
 
@@ -521,8 +521,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should not activate rental manager with non existing uuid", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: `/api/v1/rental-managers/${faker.datatype.uuid()}/active?token=${
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${faker.datatype.uuid()}?token=${
                 rentalManager.activationToken
             }`,
             payload,
@@ -540,8 +540,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should not activate rental manager with non existing token", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=FUO3vpGMe4cWC2L1LN85oH8v56HND0Fy`,
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=FUO3vpGMe4cWC2L1LN85oH8v56HND0Fy`,
             payload,
         });
 
@@ -558,8 +558,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
     test("should not activate rental manager after token expiration", async () => {
         jest.setSystemTime(fakeDate.getTime() + 1000 * 60 * 60 * 24 * 5);
         const response = await app.inject({
-            method: "PUT",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}/active?token=${rentalManager.activationToken}`,
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
             payload,
         });
 
@@ -575,8 +575,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should check if uuid param is a valid uuid", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: "/api/v1/rental-managers/123/active?token=FUO3vpGMe4cWC2L1LN85oH8v56HND0Fy",
+            method: "PATCH",
+            url: `/api/v1/rental-managers/123?token=${rentalManager.activationToken}`,
             payload,
         });
 
@@ -589,8 +589,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should check if token query string is a valid token", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active?token=12345",
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=12345`,
             payload,
         });
 
@@ -603,8 +603,8 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should check if token query string is present", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active",
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}`,
             payload,
         });
 
@@ -617,27 +617,93 @@ describe("PUT /api/v1/rental-managers/:uuid/active?token", () => {
 
     test("should check if body active property is present", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active?token=3a45e0f76ceec72888aa48ebde478a05699a3f2476f3ab75abf45ea46ab74e74",
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("body must be object");
+        expect(response.json().message).toEqual("body/0 must be object");
         expect(mailSendStub.notCalled).toBe(true);
     });
 
     test("should check if body active property is true", async () => {
         const response = await app.inject({
-            method: "PUT",
-            url: "/api/v1/rental-managers/85955c64-78bf-492c-94e6-6cb2a0770bca/active",
-            payload: {
-                active: false,
-            },
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
+            payload: [{ op: "replace", path: "/active", value: false }],
         });
 
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
-            "body/active must be equal to constant",
+            "body/0/value must be equal to constant",
+        );
+        expect(mailSendStub.notCalled).toBe(true);
+    });
+
+    test("should check if body operation property is replace", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
+            payload: [{ op: "copy", path: "/active", value: true }],
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            "body/0/op must be equal to constant",
+        );
+        expect(mailSendStub.notCalled).toBe(true);
+    });
+
+    test("should check if body path property is active", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
+            payload: [{ op: "replace", path: "/email", value: true }],
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            "body/0/path must be equal to constant",
+        );
+        expect(mailSendStub.notCalled).toBe(true);
+    });
+
+    test("should check if body path property has correct format", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
+            payload: [{ op: "replace", path: "active", value: true }],
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            "body/0/path must be equal to constant",
+        );
+        expect(mailSendStub.notCalled).toBe(true);
+    });
+
+    test("should check if body has only one instruction", async () => {
+        const firstResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
+            payload: [
+                { op: "replace", path: "/active", value: true },
+                { op: "replace", path: "/active", value: true },
+            ],
+        });
+        const secondResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
+            payload: [],
+        });
+
+        expect(firstResponse.statusCode).toBe(400);
+        expect(firstResponse.json().message).toEqual(
+            "body must NOT have more than 1 items",
+        );
+        expect(secondResponse.statusCode).toBe(400);
+        expect(secondResponse.json().message).toEqual(
+            "body must NOT have fewer than 1 items",
         );
         expect(mailSendStub.notCalled).toBe(true);
     });
