@@ -615,7 +615,7 @@ describe("PATCH /api/v1/rental-managers/:uuid", () => {
         expect(mailSendStub.notCalled).toBe(true);
     });
 
-    test("should check if body active property is present", async () => {
+    test("should check if body is present", async () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
@@ -626,7 +626,7 @@ describe("PATCH /api/v1/rental-managers/:uuid", () => {
         expect(mailSendStub.notCalled).toBe(true);
     });
 
-    test("should check if body active property is true", async () => {
+    test("should check if body active value is true", async () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
