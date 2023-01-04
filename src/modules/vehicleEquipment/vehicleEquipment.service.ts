@@ -33,6 +33,47 @@ export async function createVehicleEquipment(
     });
 }
 
+export async function updateVehicleEquipmentName(updateData: {
+    rentalUuid: string;
+    vehicleUuid: string;
+    equipmentUuid: string;
+    name: string;
+}) {
+    const equipment = await prisma.vehicleEquipment.findUnique({
+        where: {
+            uuid: updateData.equipmentUuid,
+        },
+        include: {
+            vehicle: {
+                include: {
+                    rental: true,
+                },
+            },
+        },
+    });
+    if (!equipment) {
+        throw new ProcessingException(409, "Invalid equipment uuid");
+    }
+    if (equipment.vehicle.uuid !== updateData.vehicleUuid) {
+        throw new ProcessingException(409, "Invalid vehicle uuid");
+    }
+    if (equipment.vehicle.rental.uuid !== updateData.rentalUuid) {
+        throw new ProcessingException(
+            403,
+            "Not authorized to maintain this vehicle",
+        );
+    }
+
+    return prisma.vehicleEquipment.update({
+        where: {
+            uuid: updateData.equipmentUuid,
+        },
+        data: {
+            name: updateData.name,
+        },
+    });
+}
+
 export async function deleteVehicleEquipment(deletionData: {
     rentalUuid: string;
     vehicleUuid: string;
