@@ -25,6 +25,29 @@ export type PostCreateVehicleEquipmentResponse = Static<
     typeof postCreateVehicleEquipmentResponse
 >;
 
+export const patchVehicleEquipmentBody = Type.Tuple([
+    Type.Object({
+        op: Type.Literal("replace"),
+        path: Type.Literal("/name"),
+        value: Type.String({ minLength: 2 }),
+    }),
+]);
+
+export type PatchVehicleEquipmentBody = Static<
+    typeof patchVehicleEquipmentBody
+>;
+
+export const patchVehicleEquipmentParams = Type.Object({
+    vehicleUuid: Type.String({ format: "uuid" }),
+    equipmentUuid: Type.String({ format: "uuid" }),
+});
+
+export type PatchVehicleEquipmentParams = Static<
+    typeof patchVehicleEquipmentParams
+>;
+
+export const patchVehicleEquipmentResponse = Type.Null();
+
 export const deleteVehicleEquipmentParams = Type.Object({
     vehicleUuid: Type.String({ format: "uuid" }),
     equipmentUuid: Type.String({ format: "uuid" }),

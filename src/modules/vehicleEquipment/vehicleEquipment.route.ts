@@ -4,6 +4,11 @@ import {
     DeleteVehicleEquipmentParams,
     deleteVehicleEquipmentParams,
     deleteVehicleEquipmentResponse,
+    PatchVehicleEquipmentBody,
+    patchVehicleEquipmentBody,
+    PatchVehicleEquipmentParams,
+    patchVehicleEquipmentParams,
+    patchVehicleEquipmentResponse,
     postCreateVehicleEquipmentBody,
     PostCreateVehicleEquipmentBody,
     postCreateVehicleEquipmentParams,
@@ -13,6 +18,7 @@ import {
 import {
     createVehicleEquipment,
     deleteVehicleEquipment,
+    updateVehicleEquipmentName,
 } from "./vehicleEquipment.service";
 
 export default async function vehicleEquipmentRoutes(server: FastifyInstance) {
@@ -38,6 +44,32 @@ export default async function vehicleEquipmentRoutes(server: FastifyInstance) {
                 rentalUuid: request.session.rental.uuid,
             });
             return reply.status(201).send(vehicleEquipment);
+        },
+    );
+
+    server.patch<{
+        Body: PatchVehicleEquipmentBody;
+        Params: PatchVehicleEquipmentParams;
+    }>(
+        "/:vehicleUuid/equipment/:equipmentUuid",
+        {
+            preHandler: server.auth([server.isLoggedIn]),
+            schema: {
+                body: patchVehicleEquipmentBody,
+                params: patchVehicleEquipmentParams,
+                response: {
+                    204: patchVehicleEquipmentResponse,
+                },
+            },
+        },
+        async (request, reply) => {
+            await updateVehicleEquipmentName({
+                name: request.body[0].value,
+                equipmentUuid: request.params.equipmentUuid,
+                vehicleUuid: request.params.vehicleUuid,
+                rentalUuid: request.session.rental.uuid,
+            });
+            return reply.status(204).send();
         },
     );
 
