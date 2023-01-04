@@ -1,16 +1,16 @@
 import { FastifyInstance } from "fastify";
 
 import {
+    patchRentalManagerBody,
+    PatchRentalManagerBody,
+    patchRentalManagerParams,
+    PatchRentalManagerParams,
+    patchRentalManagerQuery,
+    PatchRentalManagerQuery,
+    patchRentalManagerResponse,
     PostRegisterRentalManagerBody,
     postRegisterRentalManagerBody,
     postRegisterRentalManagerResponse,
-    PutActivateRentalManagerBody,
-    putActivateRentalManagerBody,
-    PutActivateRentalManagerParams,
-    putActivateRentalManagerParams,
-    PutActivateRentalManagerQuery,
-    putActivateRentalManagerQuery,
-    putActivateRentalManagerResponse,
 } from "./rentalManager.schema";
 import {
     activateRentalManager,
@@ -41,19 +41,19 @@ export default async function rentalManagerRoutes(server: FastifyInstance) {
         },
     );
 
-    server.put<{
-        Body: PutActivateRentalManagerBody;
-        Params: PutActivateRentalManagerParams;
-        Querystring: PutActivateRentalManagerQuery;
+    server.patch<{
+        Body: PatchRentalManagerBody;
+        Params: PatchRentalManagerParams;
+        Querystring: PatchRentalManagerQuery;
     }>(
-        "/:uuid/active",
+        "/:uuid",
         {
             schema: {
-                body: putActivateRentalManagerBody,
-                params: putActivateRentalManagerParams,
-                querystring: putActivateRentalManagerQuery,
+                body: patchRentalManagerBody,
+                params: patchRentalManagerParams,
+                querystring: patchRentalManagerQuery,
                 response: {
-                    204: putActivateRentalManagerResponse,
+                    204: patchRentalManagerResponse,
                 },
             },
         },

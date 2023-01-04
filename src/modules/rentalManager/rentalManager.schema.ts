@@ -23,30 +23,28 @@ export type PostRegisterRentalManagerResponse = Static<
     typeof postRegisterRentalManagerResponse
 >;
 
-export const putActivateRentalManagerBody = Type.Object({
-    active: Type.Literal(true),
-});
+export const patchRentalManagerBody = Type.Tuple([
+    Type.Object({
+        op: Type.Literal("replace"),
+        path: Type.Literal("/active"),
+        value: Type.Literal(true),
+    }),
+]);
+export type PatchRentalManagerBody = Static<typeof patchRentalManagerBody>;
 
-export const putActivateRentalManagerParams = Type.Object({
+export const patchRentalManagerParams = Type.Object({
     uuid: Type.String({ format: "uuid" }),
 });
 
-export const putActivateRentalManagerQuery = Type.Object({
+export const patchRentalManagerQuery = Type.Object({
     token: Type.String({ minLength: 32, maxLength: 32 }),
 });
 
-export type PutActivateRentalManagerBody = Static<
-    typeof putActivateRentalManagerBody
->;
-export type PutActivateRentalManagerParams = Static<
-    typeof putActivateRentalManagerParams
->;
-export type PutActivateRentalManagerQuery = Static<
-    typeof putActivateRentalManagerQuery
->;
+export type PatchRentalManagerParams = Static<typeof patchRentalManagerParams>;
+export type PatchRentalManagerQuery = Static<typeof patchRentalManagerQuery>;
 
-export const putActivateRentalManagerResponse = Type.Null();
+export const patchRentalManagerResponse = Type.Null();
 
-export type PutActivateRentalManagerResponse = Static<
-    typeof putActivateRentalManagerResponse
+export type PatchRentalManagerResponse = Static<
+    typeof patchRentalManagerResponse
 >;
