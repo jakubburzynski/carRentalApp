@@ -696,6 +696,1731 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
     });
 });
 
+describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
+    let app: Awaited<ReturnType<typeof createFastifyServer>>;
+    let rental: Rental;
+    let secondRental: Rental;
+    let rentalManager: RentalManager;
+    let secondRentalManager: RentalManager;
+    let fuelTypes: FuelType[];
+    let vehicle: Vehicle;
+    let zerothVehiclePhoto: VehiclePhoto;
+    let firstVehiclePhoto: VehiclePhoto;
+    let secondVehiclePhoto: VehiclePhoto;
+    let thirdVehiclePhoto: VehiclePhoto;
+    let fourthVehiclePhoto: VehiclePhoto;
+    let sessionId: string;
+    let secondSessionId: string;
+
+    const examplePassword = "Q2Fz Zj{d";
+
+    beforeAll(async () => {
+        app = await createFastifyServer();
+        await cleanupDatabase(app.prisma);
+        const unitType = await app.prisma.unitType.findFirstOrThrow();
+        rental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
+        secondRental = await app.prisma.rental.create({
+            data: {
+                name: faker.company.name(),
+                unitType: {
+                    connect: {
+                        id: unitType.id,
+                    },
+                },
+            },
+        });
+        rentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
+            },
+        });
+        secondRentalManager = await app.prisma.rentalManager.create({
+            data: {
+                name: faker.name.firstName(),
+                email: faker.internet.email(),
+                password: await argon2.hash(examplePassword),
+                active: true,
+                activationToken: null,
+                activationTokenExpiration: null,
+                rental: {
+                    connect: {
+                        id: secondRental.id,
+                    },
+                },
+            },
+        });
+        fuelTypes = await app.prisma.fuelType.findMany();
+        vehicle = await app.prisma.vehicle.create({
+            data: {
+                brand: faker.vehicle.manufacturer(),
+                model: faker.vehicle.model(),
+                year: faker.datatype.number({ min: 1900, max: 2023 }),
+                licensePlate: faker.vehicle.vrm(),
+                mileage: faker.datatype.number({ min: 1, max: 1000000 }),
+                pricePerDay: faker.datatype.number({ min: 1, max: 15000 }),
+                description: faker.lorem.paragraph(),
+                rental: {
+                    connect: {
+                        id: rental.id,
+                    },
+                },
+                fuelType: {
+                    connect: {
+                        id: fuelTypes[0].id,
+                    },
+                },
+            },
+        });
+        const loginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: rentalManager.email,
+                password: examplePassword,
+            },
+        });
+        sessionId = (
+            loginResponse.cookies[0] as { name: string; value: string }
+        ).value;
+        const secondLoginResponse = await app.inject({
+            method: "POST",
+            url: "/api/v1/auth/sessions",
+            payload: {
+                email: secondRentalManager.email,
+                password: examplePassword,
+            },
+        });
+        secondSessionId = (
+            secondLoginResponse.cookies[0] as { name: string; value: string }
+        ).value;
+    });
+
+    beforeEach(async () => {
+        const getUuid = () => crypto.randomUUID();
+        let vehiclePhotoUuid = getUuid();
+        zerothVehiclePhoto = await app.prisma.vehiclePhoto.create({
+            data: {
+                uuid: vehiclePhotoUuid,
+                url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
+                position: 128,
+                vehicle: {
+                    connect: {
+                        id: vehicle.id,
+                    },
+                },
+            },
+        });
+        vehiclePhotoUuid = getUuid();
+        firstVehiclePhoto = await app.prisma.vehiclePhoto.create({
+            data: {
+                uuid: vehiclePhotoUuid,
+                url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
+                position: 128 * 2,
+                vehicle: {
+                    connect: {
+                        id: vehicle.id,
+                    },
+                },
+            },
+        });
+        vehiclePhotoUuid = getUuid();
+        secondVehiclePhoto = await app.prisma.vehiclePhoto.create({
+            data: {
+                uuid: vehiclePhotoUuid,
+                url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
+                position: 128 * 3,
+                vehicle: {
+                    connect: {
+                        id: vehicle.id,
+                    },
+                },
+            },
+        });
+        vehiclePhotoUuid = getUuid();
+        thirdVehiclePhoto = await app.prisma.vehiclePhoto.create({
+            data: {
+                uuid: vehiclePhotoUuid,
+                url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
+                position: 128 * 4,
+                vehicle: {
+                    connect: {
+                        id: vehicle.id,
+                    },
+                },
+            },
+        });
+        vehiclePhotoUuid = getUuid();
+        fourthVehiclePhoto = await app.prisma.vehiclePhoto.create({
+            data: {
+                uuid: vehiclePhotoUuid,
+                url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
+                position: 128 * 5,
+                vehicle: {
+                    connect: {
+                        id: vehicle.id,
+                    },
+                },
+            },
+        });
+    });
+
+    afterEach(async () => {
+        await app.prisma.vehiclePhoto.deleteMany();
+    });
+
+    afterAll(async () => {
+        await cleanupDatabase(app.prisma);
+        await app.close();
+    });
+
+    test("should move photo one position forward", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${secondVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: secondVehiclePhoto.uuid, position: 576 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: secondVehiclePhoto.uuid,
+            position: 576,
+            url: secondVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo more than one position forward", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 2,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: zerothVehiclePhoto.uuid, position: 448 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 448,
+            url: zerothVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo one position backward", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: fourthVehiclePhoto.uuid, position: 448 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: fourthVehiclePhoto.uuid,
+            position: 448,
+            url: fourthVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo more than one position backward", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${thirdVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 1,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: thirdVehiclePhoto.uuid, position: 192 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: thirdVehiclePhoto.uuid,
+            position: 192,
+            url: thirdVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo to first (1 position)", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: firstVehiclePhoto.uuid, position: 64 },
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 64,
+            url: firstVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo to first (1+ positions)", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${thirdVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: thirdVehiclePhoto.uuid, position: 64 },
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: thirdVehiclePhoto.uuid,
+            position: 64,
+            url: thirdVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo to last (1 position)", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${thirdVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 4,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            { uuid: thirdVehiclePhoto.uuid, position: 960 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: thirdVehiclePhoto.uuid,
+            position: 960,
+            url: thirdVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo to last (1+ positions)", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 4,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            { uuid: firstVehiclePhoto.uuid, position: 960 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 960,
+            url: firstVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo from first to last", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 4,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            { uuid: zerothVehiclePhoto.uuid, position: 960 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 960,
+            url: zerothVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should move photo from last to first", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: fourthVehiclePhoto.uuid, position: 64 },
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: fourthVehiclePhoto.uuid,
+            position: 64,
+            url: fourthVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should set correct position if gap is bigger than standard", async () => {
+        await app.prisma.vehiclePhoto.delete({
+            where: {
+                uuid: secondVehiclePhoto.uuid,
+            },
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             0   1       2   3 
+            128 256     512 640
+        */
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 2,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: fourthVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: fourthVehiclePhoto.uuid,
+            position: 384,
+            url: fourthVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(4);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should set correct position if gap is smaller than standard", async () => {
+        await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 2,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             0   1   4   2   3
+            128 256 320 384 512
+        */
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${secondVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 2,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 288 },
+            { uuid: fourthVehiclePhoto.uuid, position: 320 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: secondVehiclePhoto.uuid,
+            position: 288,
+            url: secondVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should handle multiple moves (2 photos) #1", async () => {
+        await app.prisma.vehiclePhoto.deleteMany({
+            where: {
+                position: {
+                    gt: 256,
+                },
+            },
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             0   1
+            128 256
+        */
+        const firstResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(firstResponse.statusCode).toBe(200);
+        expect(firstResponse.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 64,
+            url: firstVehiclePhoto.url,
+        });
+        const secondResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(secondResponse.statusCode).toBe(200);
+        expect(secondResponse.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 32,
+            url: zerothVehiclePhoto.url,
+        });
+        const thirdResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 1,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(thirdResponse.statusCode).toBe(200);
+        expect(thirdResponse.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 96,
+            url: zerothVehiclePhoto.url,
+        });
+        const fourthResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(fourthResponse.statusCode).toBe(200);
+        expect(fourthResponse.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 32,
+            url: zerothVehiclePhoto.url,
+        });
+        const fifthResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(fifthResponse.statusCode).toBe(200);
+        expect(fifthResponse.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 16,
+            url: firstVehiclePhoto.url,
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: firstVehiclePhoto.uuid, position: 16 },
+            { uuid: zerothVehiclePhoto.uuid, position: 32 },
+        ];
+        expect(vehiclePhotos.length).toBe(2);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should handle multiple moves (2 photos) #2", async () => {
+        await app.prisma.vehiclePhoto.deleteMany({
+            where: {
+                position: {
+                    gt: 256,
+                },
+            },
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             0   1
+            128 256
+        */
+        const firstResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(firstResponse.statusCode).toBe(200);
+        expect(firstResponse.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 64,
+            url: firstVehiclePhoto.url,
+        });
+        const secondResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(secondResponse.statusCode).toBe(200);
+        expect(secondResponse.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 32,
+            url: zerothVehiclePhoto.url,
+        });
+        const thirdResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(thirdResponse.statusCode).toBe(200);
+        expect(thirdResponse.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 16,
+            url: firstVehiclePhoto.url,
+        });
+        const fourthResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(fourthResponse.statusCode).toBe(200);
+        expect(fourthResponse.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 8,
+            url: zerothVehiclePhoto.url,
+        });
+        const fifthResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(fifthResponse.statusCode).toBe(200);
+        expect(fifthResponse.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 4,
+            url: firstVehiclePhoto.url,
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: firstVehiclePhoto.uuid, position: 4 },
+            { uuid: zerothVehiclePhoto.uuid, position: 8 },
+        ];
+        expect(vehiclePhotos.length).toBe(2);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should handle multiple moves (3 photos) #1", async () => {
+        await app.prisma.vehiclePhoto.deleteMany({
+            where: {
+                position: {
+                    gt: 384,
+                },
+            },
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             0   1   2
+            128 256 384
+        */
+
+        const firstResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 1,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(firstResponse.statusCode).toBe(200);
+        expect(firstResponse.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 320,
+            url: zerothVehiclePhoto.url,
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             1   0   2
+            256 320 384
+        */
+
+        const secondResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${secondVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(secondResponse.statusCode).toBe(200);
+        expect(secondResponse.json()).toMatchObject({
+            uuid: secondVehiclePhoto.uuid,
+            position: 128,
+            url: secondVehiclePhoto.url,
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             2   1   0 
+            128 256 320
+        */
+
+        const thirdResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(thirdResponse.statusCode).toBe(200);
+        expect(thirdResponse.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 64,
+            url: firstVehiclePhoto.url,
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             1   2   0 
+            64  128 320
+        */
+
+        const fourthResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 1,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(fourthResponse.statusCode).toBe(200);
+        expect(fourthResponse.json()).toMatchObject({
+            uuid: zerothVehiclePhoto.uuid,
+            position: 96,
+            url: zerothVehiclePhoto.url,
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             1   0   2 
+            64  96  128
+        */
+
+        const fifthResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 2,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+        expect(fifthResponse.statusCode).toBe(200);
+        expect(fifthResponse.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 192,
+            url: firstVehiclePhoto.url,
+        });
+        /*
+            Current order
+             0   1   2   3   4
+             0   2   1
+            96 128 192
+        */
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 96 },
+            { uuid: secondVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 192 },
+        ];
+        expect(vehiclePhotos.length).toBe(3);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if new position matches old position", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 1,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({
+            uuid: firstVehiclePhoto.uuid,
+            position: 256,
+            url: firstVehiclePhoto.url,
+        });
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check for not existing vehicle", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${faker.datatype.uuid()}/photos/${
+                firstVehiclePhoto.uuid
+            }`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(404);
+        expect(response.json().message).toEqual("Invalid vehicle uuid");
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check for not existing photo", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${
+                vehicle.uuid
+            }/photos/${faker.datatype.uuid()}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(404);
+        expect(response.json().message).toEqual("Invalid vehicle photo uuid");
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should not update if rental manager is not logged in", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: undefined,
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(401);
+        expect(response.json().message).toEqual("Not authenticated");
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if currently logged in rental manager has rights to update vehicle photo", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId: secondSessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(403);
+        expect(response.json().message).toEqual(
+            "Not authorized to maintain this vehicle",
+        );
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if vehicleUuid param is a valid uuid", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/123/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            'params/vehicleUuid must match format "uuid"',
+        );
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if photoUuid param is a valid uuid", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/123`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 1,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            'params/photoUuid must match format "uuid"',
+        );
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if body is present", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual("body/0 must be object");
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if position value is non negative", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: -1,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual("body/0/value must be >= 0");
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if position value is not bigger than index of last vehicle photo", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 5,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual("body/0/value must be <= 4");
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if body operation property is replace", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "copy",
+                    path: "/position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            "body/0/op must be equal to constant",
+        );
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if body path property is position", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/uuid",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            "body/0/path must be equal to constant",
+        );
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if body path property has correct format", async () => {
+        const response = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "position",
+                    value: 3,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(response.statusCode).toBe(400);
+        expect(response.json().message).toEqual(
+            "body/0/path must be equal to constant",
+        );
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+
+    test("should check if body has only one instruction", async () => {
+        const firstResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [],
+            cookies: {
+                sessionId,
+            },
+        });
+        const secondResponse = await app.inject({
+            method: "PATCH",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
+            payload: [
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 3,
+                },
+                {
+                    op: "replace",
+                    path: "/position",
+                    value: 0,
+                },
+            ],
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
+            orderBy: {
+                position: "asc",
+            },
+        });
+        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
+            uuid: p.uuid,
+            position: p.position,
+        }));
+        const correctOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: 128 },
+            { uuid: firstVehiclePhoto.uuid, position: 256 },
+            { uuid: secondVehiclePhoto.uuid, position: 384 },
+            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+        ];
+        expect(firstResponse.statusCode).toBe(400);
+        expect(firstResponse.json().message).toEqual(
+            "body must NOT have fewer than 1 items",
+        );
+        expect(secondResponse.statusCode).toBe(400);
+        expect(secondResponse.json().message).toEqual(
+            "body must NOT have more than 1 items",
+        );
+        expect(vehiclePhotos.length).toBe(5);
+        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+    });
+});
+
 describe("DELETE /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
     let rental: Rental;
