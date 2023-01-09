@@ -11,6 +11,9 @@ import { ProcessingException } from "../../utils/processingException.util";
 import { findVehicleByUuid } from "../vehicle/vehicle.service";
 import isFastifyError from "../../utils/isFastifyError.util";
 
+export const POSITION_OFFSET = 65536;
+export const POSITION_GAP = 256;
+
 export async function uploadVehiclePhoto(
     vehicleUuid: string,
     rentalUuid: string,
@@ -67,7 +70,7 @@ export async function uploadVehiclePhoto(
         const createdVehiclePhoto = await tx.vehiclePhoto.create({
             data: {
                 uuid: photoEntityUuid,
-                position: 128 * (vehiclePhotoCount + 1),
+                position: POSITION_GAP * vehiclePhotoCount + POSITION_OFFSET,
                 url: photoUrl,
                 vehicle: {
                     connect: {

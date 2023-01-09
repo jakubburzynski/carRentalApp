@@ -30,6 +30,7 @@ import {
 import cleanupDatabase from "../../../test/utils/cleanupDatabase";
 import createFastifyServer from "../../loaders/fastify";
 import uuidRegex from "../../utils/uuidRegex.util";
+import { POSITION_GAP, POSITION_OFFSET } from "./vehiclePhoto.service";
 
 describe("POST /api/v1/vehicles/:uuid/photos", () => {
     let app: Awaited<ReturnType<typeof createFastifyServer>>;
@@ -217,12 +218,12 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         expect(response.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[0]}.png`,
-            position: 128,
+            position: POSITION_OFFSET,
         });
         expect(cryptoRandomUUIDSpy.calledOnce).toBe(true);
         expect(vehiclePhotos.length).toEqual(1);
         expect(vehiclePhotos[0].uuid).toBe(cryptoRandomUUIDSpy.returnValues[0]);
-        expect(vehiclePhotos[0].position).toBe(128);
+        expect(vehiclePhotos[0].position).toBe(POSITION_OFFSET);
         expect(vehiclePhotos[0].vehicleId).toBe(vehicle.id);
         expect(s3SendStub.calledOnce).toBe(true);
         expect(
@@ -254,12 +255,12 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         expect(response.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[0]}.jpeg`,
-            position: 128,
+            position: POSITION_OFFSET,
         });
         expect(cryptoRandomUUIDSpy.calledOnce).toBe(true);
         expect(vehiclePhotos.length).toEqual(1);
         expect(vehiclePhotos[0].uuid).toBe(cryptoRandomUUIDSpy.returnValues[0]);
-        expect(vehiclePhotos[0].position).toBe(128);
+        expect(vehiclePhotos[0].position).toBe(POSITION_OFFSET);
         expect(vehiclePhotos[0].vehicleId).toBe(vehicle.id);
         expect(s3SendStub.calledOnce).toBe(true);
         expect(
@@ -312,30 +313,32 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         expect(firstResponse.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[0]}.jpeg`,
-            position: 128,
+            position: POSITION_OFFSET,
         });
         expect(secondResponse.statusCode).toBe(201);
         expect(secondResponse.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[1]}.png`,
-            position: 256,
+            position: POSITION_OFFSET + POSITION_GAP,
         });
         expect(thirdResponse.statusCode).toBe(201);
         expect(thirdResponse.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[2]}.jpeg`,
-            position: 384,
+            position: POSITION_OFFSET + POSITION_GAP * 2,
         });
         expect(cryptoRandomUUIDSpy.calledThrice).toBe(true);
         expect(vehiclePhotos.length).toEqual(3);
         expect(vehiclePhotos[0].uuid).toBe(cryptoRandomUUIDSpy.returnValues[0]);
-        expect(vehiclePhotos[0].position).toBe(128);
+        expect(vehiclePhotos[0].position).toBe(POSITION_OFFSET);
         expect(vehiclePhotos[0].vehicleId).toBe(vehicle.id);
         expect(vehiclePhotos[1].uuid).toBe(cryptoRandomUUIDSpy.returnValues[1]);
-        expect(vehiclePhotos[1].position).toBe(256);
+        expect(vehiclePhotos[1].position).toBe(POSITION_OFFSET + POSITION_GAP);
         expect(vehiclePhotos[1].vehicleId).toBe(vehicle.id);
         expect(vehiclePhotos[2].uuid).toBe(cryptoRandomUUIDSpy.returnValues[2]);
-        expect(vehiclePhotos[2].position).toBe(384);
+        expect(vehiclePhotos[2].position).toBe(
+            POSITION_OFFSET + POSITION_GAP * 2,
+        );
         expect(vehiclePhotos[2].vehicleId).toBe(vehicle.id);
         expect(s3SendStub.calledThrice).toBe(true);
     });
@@ -391,39 +394,39 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         expect(firstResponse.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[0]}.jpeg`,
-            position: 128,
+            position: POSITION_OFFSET,
         });
         expect(secondResponse.statusCode).toBe(201);
         expect(secondResponse.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${secondVehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[1]}.png`,
-            position: 128,
+            position: POSITION_OFFSET,
         });
         expect(thirdResponse.statusCode).toBe(201);
         expect(thirdResponse.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[2]}.png`,
-            position: 256,
+            position: POSITION_OFFSET + POSITION_GAP,
         });
         expect(fourthResponse.statusCode).toBe(201);
         expect(fourthResponse.json()).toEqual({
             uuid: expect.stringMatching(uuidRegex),
             url: `${s3BucketBaseUrl}/${secondVehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[3]}.jpeg`,
-            position: 256,
+            position: POSITION_OFFSET + POSITION_GAP,
         });
         expect(cryptoRandomUUIDSpy.callCount).toBe(4);
         expect(vehiclePhotos.length).toEqual(4);
         expect(vehiclePhotos[0].uuid).toBe(cryptoRandomUUIDSpy.returnValues[0]);
-        expect(vehiclePhotos[0].position).toBe(128);
+        expect(vehiclePhotos[0].position).toBe(POSITION_OFFSET);
         expect(vehiclePhotos[0].vehicleId).toBe(vehicle.id);
         expect(vehiclePhotos[1].uuid).toBe(cryptoRandomUUIDSpy.returnValues[1]);
-        expect(vehiclePhotos[1].position).toBe(128);
+        expect(vehiclePhotos[1].position).toBe(POSITION_OFFSET);
         expect(vehiclePhotos[1].vehicleId).toBe(secondVehicle.id);
         expect(vehiclePhotos[2].uuid).toBe(cryptoRandomUUIDSpy.returnValues[2]);
-        expect(vehiclePhotos[2].position).toBe(256);
+        expect(vehiclePhotos[2].position).toBe(POSITION_OFFSET + POSITION_GAP);
         expect(vehiclePhotos[2].vehicleId).toBe(vehicle.id);
         expect(vehiclePhotos[3].uuid).toBe(cryptoRandomUUIDSpy.returnValues[3]);
-        expect(vehiclePhotos[3].position).toBe(256);
+        expect(vehiclePhotos[3].position).toBe(POSITION_OFFSET + POSITION_GAP);
         expect(vehiclePhotos[3].vehicleId).toBe(secondVehicle.id);
         expect(s3SendStub.callCount).toBe(4);
     });
