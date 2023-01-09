@@ -6,11 +6,20 @@ import {
     deleteVehiclePhotoParams,
     DeleteVehiclePhotoParams,
     deleteVehiclePhotoResponse,
+    patchUpdateVehiclePhotoPositionBody,
+    PatchUpdateVehiclePhotoPositionBody,
+    patchUpdateVehiclePhotoPositionParams,
+    PatchUpdateVehiclePhotoPositionParams,
+    patchUpdateVehiclePhotoPositionResponse,
     postUploadVehiclePhotoParams,
     PostUploadVehiclePhotoParams,
     postUploadVehiclePhotoResponse,
 } from "./vehiclePhoto.schema";
-import { deleteVehiclePhoto, uploadVehiclePhoto } from "./vehiclePhoto.service";
+import {
+    deleteVehiclePhoto,
+    updateVehiclePhotoPosition,
+    uploadVehiclePhoto,
+} from "./vehiclePhoto.service";
 import isFastifyError from "../../utils/isFastifyError.util";
 
 export default async function vehiclePhotoRoutes(server: FastifyInstance) {
@@ -72,6 +81,32 @@ export default async function vehiclePhotoRoutes(server: FastifyInstance) {
                 photo,
             );
             return reply.status(201).send(vehiclePhoto);
+        },
+    );
+
+    server.patch<{
+        Body: PatchUpdateVehiclePhotoPositionBody;
+        Params: PatchUpdateVehiclePhotoPositionParams;
+    }>(
+        "/:vehicleUuid/photos/:photoUuid",
+        {
+            preHandler: server.auth([server.isLoggedIn]),
+            schema: {
+                body: patchUpdateVehiclePhotoPositionBody,
+                params: patchUpdateVehiclePhotoPositionParams,
+                response: {
+                    200: patchUpdateVehiclePhotoPositionResponse,
+                },
+            },
+        },
+        async (request, reply) => {
+            const updatedPhoto = await updateVehiclePhotoPosition(
+                request.params.vehicleUuid,
+                request.params.photoUuid,
+                request.session.rental.uuid,
+                request.body[0].value,
+            );
+            return reply.status(200).send(updatedPhoto);
         },
     );
 
