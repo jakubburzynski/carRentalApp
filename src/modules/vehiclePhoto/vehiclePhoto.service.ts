@@ -93,6 +93,82 @@ export async function uploadVehiclePhoto(
     });
 }
 
+export async function updateVehiclePhotoPosition(
+    vehicleUuid: string,
+    vehiclePhotoUuid: string,
+    rentalUuid: string,
+    newIndex: number,
+) {
+    const vehicle = await findVehicleByUuid(vehicleUuid, true);
+    if (!vehicle) {
+        throw new ProcessingException(404, "Invalid vehicle uuid");
+    }
+    if (vehicle.rental.uuid !== rentalUuid) {
+        throw new ProcessingException(
+            403,
+            "Not authorized to maintain this vehicle",
+        );
+    }
+
+    const vehiclePhotos = await prisma.vehiclePhoto.findMany({
+        where: {
+            vehicleId: vehicle.id,
+        },
+        orderBy: {
+            position: "asc",
+        },
+    });
+
+    const currentIndex = vehiclePhotos.findIndex(
+        (photo) => photo.uuid === vehiclePhotoUuid,
+    );
+    if (currentIndex === -1) {
+        throw new ProcessingException(404, "Invalid vehicle photo uuid");
+    }
+
+    const targetPhoto = vehiclePhotos[currentIndex];
+    if (newIndex === currentIndex) {
+        return targetPhoto;
+    }
+    if (newIndex >= vehiclePhotos.length) {
+        throw new ProcessingException(
+            400,
+            `body/0/value must be <= ${vehiclePhotos.length - 1}`,
+        );
+    }
+
+    let position: number;
+    if (newIndex === 0) {
+        const next = vehiclePhotos[newIndex];
+        position = next.position - Math.floor(next.position / 2);
+    } else if (newIndex === vehiclePhotos.length - 1) {
+        const prev = vehiclePhotos[newIndex];
+        position = prev.position + Math.floor(prev.position / 2);
+    } else if (newIndex > currentIndex) {
+        const prev = vehiclePhotos[newIndex];
+        const next = vehiclePhotos[newIndex + 1];
+        position =
+            prev.position +
+            Math.floor(Math.abs(prev.position - next.position) / 2);
+    } else {
+        const prev = vehiclePhotos[newIndex - 1];
+        const next = vehiclePhotos[newIndex];
+        position =
+            prev.position +
+            Math.floor(Math.abs(prev.position - next.position) / 2);
+    }
+
+    const updatedPhoto = await prisma.vehiclePhoto.update({
+        where: {
+            uuid: vehiclePhotoUuid,
+        },
+        data: {
+            position,
+        },
+    });
+    return updatedPhoto;
+}
+
 export async function deleteVehiclePhoto(
     vehicleUuid: string,
     vehiclePhotoUuid: string,
