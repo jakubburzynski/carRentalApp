@@ -1,6 +1,7 @@
 import fastify, { FastifyServerOptions } from "fastify";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { PrismaClient, Rental, RentalManager } from "@prisma/client";
+import fastifyHelmet from "@fastify/helmet";
 import fastifyCookie from "@fastify/cookie";
 import fastifySession from "@fastify/session";
 import fastifyMultipart from "@fastify/multipart";
@@ -52,6 +53,7 @@ export default async function createFastifyServer(
     await server.register(prismaPlugin);
     server.register(envPlugin);
     await server.after();
+    server.register(fastifyHelmet);
     server.register(fastifyCookie);
     server.register(fastifySession, {
         cookieName: "sessionId",
