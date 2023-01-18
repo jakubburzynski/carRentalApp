@@ -431,6 +431,102 @@ describe("POST /api/v1/vehicles/:uuid/photos", () => {
         expect(s3SendStub.callCount).toBe(4);
     });
 
+    test("should maintain order when difference between positions is not equal", async () => {
+        const firstForm = new FormData();
+        firstForm.append("photo", loadJpegVehiclePhoto());
+        const firstResponse = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos`,
+            payload: firstForm,
+            headers: firstForm.getHeaders(),
+            cookies: {
+                sessionId,
+            },
+        });
+        const secondForm = new FormData();
+        secondForm.append("photo", loadPngVehiclePhoto());
+        const secondResponse = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos`,
+            payload: secondForm,
+            headers: secondForm.getHeaders(),
+            cookies: {
+                sessionId,
+            },
+        });
+        const thirdForm = new FormData();
+        thirdForm.append("photo", loadJpegVehiclePhoto());
+        const thirdResponse = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos`,
+            payload: thirdForm,
+            headers: thirdForm.getHeaders(),
+            cookies: {
+                sessionId,
+            },
+        });
+
+        await app.prisma.vehiclePhoto.delete({
+            where: {
+                uuid: secondResponse.json().uuid,
+            },
+        });
+
+        const fourthForm = new FormData();
+        fourthForm.append("photo", loadPngVehiclePhoto());
+        const fourthResponse = await app.inject({
+            method: "POST",
+            url: `/api/v1/vehicles/${vehicle.uuid}/photos`,
+            payload: fourthForm,
+            headers: fourthForm.getHeaders(),
+            cookies: {
+                sessionId,
+            },
+        });
+
+        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany();
+        expect(firstResponse.statusCode).toBe(201);
+        expect(firstResponse.json()).toEqual({
+            uuid: expect.stringMatching(uuidRegex),
+            url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[0]}.jpeg`,
+            position: POSITION_OFFSET,
+        });
+        expect(secondResponse.statusCode).toBe(201);
+        expect(secondResponse.json()).toEqual({
+            uuid: expect.stringMatching(uuidRegex),
+            url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[1]}.png`,
+            position: POSITION_OFFSET + POSITION_GAP,
+        });
+        expect(thirdResponse.statusCode).toBe(201);
+        expect(thirdResponse.json()).toEqual({
+            uuid: expect.stringMatching(uuidRegex),
+            url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[2]}.jpeg`,
+            position: POSITION_OFFSET + POSITION_GAP * 2,
+        });
+        expect(fourthResponse.statusCode).toBe(201);
+        expect(fourthResponse.json()).toEqual({
+            uuid: expect.stringMatching(uuidRegex),
+            url: `${s3BucketBaseUrl}/${vehicle.uuid}/${cryptoRandomUUIDSpy.returnValues[3]}.png`,
+            position: POSITION_OFFSET + POSITION_GAP * 3,
+        });
+        expect(cryptoRandomUUIDSpy.callCount).toBe(4);
+        expect(vehiclePhotos.length).toEqual(3);
+        expect(vehiclePhotos[0].uuid).toBe(cryptoRandomUUIDSpy.returnValues[0]);
+        expect(vehiclePhotos[0].position).toBe(POSITION_OFFSET);
+        expect(vehiclePhotos[0].vehicleId).toBe(vehicle.id);
+        expect(vehiclePhotos[1].uuid).toBe(cryptoRandomUUIDSpy.returnValues[2]);
+        expect(vehiclePhotos[1].position).toBe(
+            POSITION_OFFSET + POSITION_GAP * 2,
+        );
+        expect(vehiclePhotos[1].vehicleId).toBe(vehicle.id);
+        expect(vehiclePhotos[2].uuid).toBe(cryptoRandomUUIDSpy.returnValues[3]);
+        expect(vehiclePhotos[2].position).toBe(
+            POSITION_OFFSET + POSITION_GAP * 3,
+        );
+        expect(vehiclePhotos[2].vehicleId).toBe(vehicle.id);
+        expect(s3SendStub.callCount).toBe(4);
+    });
+
     test("should not upload a vehicle photo with not existing vehicle", async () => {
         const form = new FormData();
         form.append("photo", loadJpegVehiclePhoto());
