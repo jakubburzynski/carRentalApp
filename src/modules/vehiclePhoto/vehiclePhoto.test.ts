@@ -714,6 +714,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
     let fourthVehiclePhoto: VehiclePhoto;
     let sessionId: string;
     let secondSessionId: string;
+    let baseCorrectOrder: { uuid: string; position: number }[];
 
     const examplePassword = "Q2Fz Zj{d";
 
@@ -824,7 +825,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             data: {
                 uuid: vehiclePhotoUuid,
                 url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
-                position: 128,
+                position: POSITION_OFFSET,
                 vehicle: {
                     connect: {
                         id: vehicle.id,
@@ -837,7 +838,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             data: {
                 uuid: vehiclePhotoUuid,
                 url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
-                position: 128 * 2,
+                position: POSITION_OFFSET + POSITION_GAP,
                 vehicle: {
                     connect: {
                         id: vehicle.id,
@@ -850,7 +851,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             data: {
                 uuid: vehiclePhotoUuid,
                 url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
-                position: 128 * 3,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
                 vehicle: {
                     connect: {
                         id: vehicle.id,
@@ -863,7 +864,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             data: {
                 uuid: vehiclePhotoUuid,
                 url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
-                position: 128 * 4,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
                 vehicle: {
                     connect: {
                         id: vehicle.id,
@@ -876,7 +877,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             data: {
                 uuid: vehiclePhotoUuid,
                 url: `https://s3.${app.config.S3_REGION}.amazonaws.com/${app.config.S3_BUCKET_NAME}/${vehicle.uuid}/${vehiclePhotoUuid}.png`,
-                position: 128 * 5,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
                 vehicle: {
                     connect: {
                         id: vehicle.id,
@@ -884,6 +885,25 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
                 },
             },
         });
+        baseCorrectOrder = [
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
+        ];
     });
 
     afterEach(async () => {
@@ -921,16 +941,37 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: secondVehiclePhoto.uuid, position: 576 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET +
+                    POSITION_GAP * 3 +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET +
+                                POSITION_GAP * 3 -
+                                (POSITION_OFFSET + POSITION_GAP * 4),
+                        ) / 2,
+                    ),
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: secondVehiclePhoto.uuid,
-            position: 576,
+            position: correctOrder[3].position,
             url: secondVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -963,16 +1004,40 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: zerothVehiclePhoto.uuid, position: 448 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: zerothVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET +
+                    POSITION_GAP * 2 +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET +
+                                POSITION_GAP * 2 -
+                                (POSITION_OFFSET + POSITION_GAP * 3),
+                        ) / 2,
+                    ),
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 448,
+            position: correctOrder[2].position,
             url: zerothVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1005,16 +1070,37 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: fourthVehiclePhoto.uuid, position: 448 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET +
+                    POSITION_GAP * 2 +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET +
+                                POSITION_GAP * 2 -
+                                (POSITION_OFFSET + POSITION_GAP * 3),
+                        ) / 2,
+                    ),
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: fourthVehiclePhoto.uuid,
-            position: 448,
+            position: correctOrder[3].position,
             url: fourthVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1047,16 +1133,34 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: thirdVehiclePhoto.uuid, position: 192 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET - (POSITION_OFFSET + POSITION_GAP),
+                        ) / 2,
+                    ),
+            },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: thirdVehiclePhoto.uuid,
-            position: 192,
+            position: correctOrder[1].position,
             url: thirdVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1089,16 +1193,28 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: firstVehiclePhoto.uuid, position: 64 },
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET - POSITION_GAP,
+            },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 64,
+            position: correctOrder[0].position,
             url: firstVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1131,16 +1247,28 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: thirdVehiclePhoto.uuid, position: 64 },
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET - POSITION_GAP,
+            },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: thirdVehiclePhoto.uuid,
-            position: 64,
+            position: correctOrder[0].position,
             url: thirdVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1173,16 +1301,28 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-            { uuid: thirdVehiclePhoto.uuid, position: 960 },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4 + POSITION_GAP,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: thirdVehiclePhoto.uuid,
-            position: 960,
+            position: correctOrder[4].position,
             url: thirdVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1215,16 +1355,28 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-            { uuid: firstVehiclePhoto.uuid, position: 960 },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4 + POSITION_GAP,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 960,
+            position: correctOrder[4].position,
             url: firstVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1257,16 +1409,31 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-            { uuid: zerothVehiclePhoto.uuid, position: 960 },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4,
+            },
+            {
+                uuid: zerothVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 4 + POSITION_GAP,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 960,
+            position: correctOrder[4].position,
             url: zerothVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1299,16 +1466,28 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: fourthVehiclePhoto.uuid, position: 64 },
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position: POSITION_OFFSET - POSITION_GAP,
+            },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 2,
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: fourthVehiclePhoto.uuid,
-            position: 64,
+            position: correctOrder[0].position,
             url: fourthVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1324,8 +1503,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         /*
             Current order
              0   1   2   3   4
-             0   1       2   3 
-            128 256     512 640
+             0   1       2   3
         */
         const response = await app.inject({
             method: "PATCH",
@@ -1352,15 +1530,33 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: fourthVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET +
+                    POSITION_GAP +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET +
+                                POSITION_GAP -
+                                (POSITION_OFFSET + POSITION_GAP * 3),
+                        ) / 2,
+                    ),
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: fourthVehiclePhoto.uuid,
-            position: 384,
+            position: correctOrder[2].position,
             url: fourthVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(4);
@@ -1386,7 +1582,6 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             Current order
              0   1   2   3   4
              0   1   4   2   3
-            128 256 320 384 512
         */
         const response = await app.inject({
             method: "PATCH",
@@ -1413,16 +1608,55 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 288 },
-            { uuid: fourthVehiclePhoto.uuid, position: 320 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
+            { uuid: zerothVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
+            {
+                uuid: secondVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET +
+                    POSITION_GAP +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET +
+                                POSITION_GAP -
+                                (POSITION_OFFSET +
+                                    POSITION_GAP +
+                                    Math.floor(
+                                        Math.abs(
+                                            POSITION_OFFSET +
+                                                POSITION_GAP -
+                                                (POSITION_OFFSET +
+                                                    POSITION_GAP * 2),
+                                        ) / 2,
+                                    )),
+                        ) / 2,
+                    ),
+            },
+            {
+                uuid: fourthVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET +
+                    POSITION_GAP +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET +
+                                POSITION_GAP -
+                                (POSITION_OFFSET + POSITION_GAP * 2),
+                        ) / 2,
+                    ),
+            },
+            {
+                uuid: thirdVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP * 3,
+            },
         ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: secondVehiclePhoto.uuid,
-            position: 288,
+            position: correctOrder[2].position,
             url: secondVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
@@ -1433,7 +1667,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         await app.prisma.vehiclePhoto.deleteMany({
             where: {
                 position: {
-                    gt: 256,
+                    gt: POSITION_OFFSET + POSITION_GAP,
                 },
             },
         });
@@ -1441,7 +1675,6 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             Current order
              0   1   2   3   4
              0   1
-            128 256
         */
         const firstResponse = await app.inject({
             method: "PATCH",
@@ -1460,7 +1693,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(firstResponse.statusCode).toBe(200);
         expect(firstResponse.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 64,
+            position: POSITION_OFFSET - POSITION_GAP,
             url: firstVehiclePhoto.url,
         });
         const secondResponse = await app.inject({
@@ -1480,7 +1713,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(secondResponse.statusCode).toBe(200);
         expect(secondResponse.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 32,
+            position: POSITION_OFFSET - POSITION_GAP * 2,
             url: zerothVehiclePhoto.url,
         });
         const thirdResponse = await app.inject({
@@ -1500,7 +1733,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(thirdResponse.statusCode).toBe(200);
         expect(thirdResponse.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 96,
+            position: POSITION_OFFSET,
             url: zerothVehiclePhoto.url,
         });
         const fourthResponse = await app.inject({
@@ -1520,7 +1753,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(fourthResponse.statusCode).toBe(200);
         expect(fourthResponse.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 32,
+            position: POSITION_OFFSET - POSITION_GAP * 2,
             url: zerothVehiclePhoto.url,
         });
         const fifthResponse = await app.inject({
@@ -1540,7 +1773,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(fifthResponse.statusCode).toBe(200);
         expect(fifthResponse.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 16,
+            position: POSITION_OFFSET - POSITION_GAP * 3,
             url: firstVehiclePhoto.url,
         });
 
@@ -1554,8 +1787,14 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: firstVehiclePhoto.uuid, position: 16 },
-            { uuid: zerothVehiclePhoto.uuid, position: 32 },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET - POSITION_GAP * 3,
+            },
+            {
+                uuid: zerothVehiclePhoto.uuid,
+                position: POSITION_OFFSET - POSITION_GAP * 2,
+            },
         ];
         expect(vehiclePhotos.length).toBe(2);
         expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
@@ -1565,7 +1804,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         await app.prisma.vehiclePhoto.deleteMany({
             where: {
                 position: {
-                    gt: 256,
+                    gt: POSITION_OFFSET + POSITION_GAP,
                 },
             },
         });
@@ -1573,7 +1812,6 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             Current order
              0   1   2   3   4
              0   1
-            128 256
         */
         const firstResponse = await app.inject({
             method: "PATCH",
@@ -1592,7 +1830,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(firstResponse.statusCode).toBe(200);
         expect(firstResponse.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 64,
+            position: POSITION_OFFSET - POSITION_GAP,
             url: firstVehiclePhoto.url,
         });
         const secondResponse = await app.inject({
@@ -1612,7 +1850,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(secondResponse.statusCode).toBe(200);
         expect(secondResponse.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 32,
+            position: POSITION_OFFSET - POSITION_GAP * 2,
             url: zerothVehiclePhoto.url,
         });
         const thirdResponse = await app.inject({
@@ -1632,7 +1870,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(thirdResponse.statusCode).toBe(200);
         expect(thirdResponse.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 16,
+            position: POSITION_OFFSET - POSITION_GAP * 3,
             url: firstVehiclePhoto.url,
         });
         const fourthResponse = await app.inject({
@@ -1652,7 +1890,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(fourthResponse.statusCode).toBe(200);
         expect(fourthResponse.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 8,
+            position: POSITION_OFFSET - POSITION_GAP * 4,
             url: zerothVehiclePhoto.url,
         });
         const fifthResponse = await app.inject({
@@ -1672,7 +1910,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(fifthResponse.statusCode).toBe(200);
         expect(fifthResponse.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 4,
+            position: POSITION_OFFSET - POSITION_GAP * 5,
             url: firstVehiclePhoto.url,
         });
 
@@ -1686,8 +1924,14 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: firstVehiclePhoto.uuid, position: 4 },
-            { uuid: zerothVehiclePhoto.uuid, position: 8 },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET - POSITION_GAP * 5,
+            },
+            {
+                uuid: zerothVehiclePhoto.uuid,
+                position: POSITION_OFFSET - POSITION_GAP * 4,
+            },
         ];
         expect(vehiclePhotos.length).toBe(2);
         expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
@@ -1697,7 +1941,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         await app.prisma.vehiclePhoto.deleteMany({
             where: {
                 position: {
-                    gt: 384,
+                    gt: POSITION_OFFSET + POSITION_GAP * 2,
                 },
             },
         });
@@ -1705,7 +1949,6 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             Current order
              0   1   2   3   4
              0   1   2
-            128 256 384
         */
 
         const firstResponse = await app.inject({
@@ -1725,14 +1968,22 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(firstResponse.statusCode).toBe(200);
         expect(firstResponse.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 320,
+            position:
+                POSITION_OFFSET +
+                POSITION_GAP +
+                Math.floor(
+                    Math.abs(
+                        POSITION_OFFSET +
+                            POSITION_GAP -
+                            (POSITION_OFFSET + POSITION_GAP * 2),
+                    ) / 2,
+                ),
             url: zerothVehiclePhoto.url,
         });
         /*
             Current order
              0   1   2   3   4
              1   0   2
-            256 320 384
         */
 
         const secondResponse = await app.inject({
@@ -1752,14 +2003,13 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(secondResponse.statusCode).toBe(200);
         expect(secondResponse.json()).toMatchObject({
             uuid: secondVehiclePhoto.uuid,
-            position: 128,
+            position: POSITION_OFFSET,
             url: secondVehiclePhoto.url,
         });
         /*
             Current order
              0   1   2   3   4
              2   1   0 
-            128 256 320
         */
 
         const thirdResponse = await app.inject({
@@ -1779,14 +2029,13 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(thirdResponse.statusCode).toBe(200);
         expect(thirdResponse.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 64,
+            position: POSITION_OFFSET - POSITION_GAP,
             url: firstVehiclePhoto.url,
         });
         /*
             Current order
              0   1   2   3   4
              1   2   0 
-            64  128 320
         */
 
         const fourthResponse = await app.inject({
@@ -1806,14 +2055,19 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(fourthResponse.statusCode).toBe(200);
         expect(fourthResponse.json()).toMatchObject({
             uuid: zerothVehiclePhoto.uuid,
-            position: 96,
+            position:
+                POSITION_OFFSET -
+                POSITION_GAP +
+                Math.floor(
+                    Math.abs(POSITION_OFFSET - POSITION_GAP - POSITION_OFFSET) /
+                        2,
+                ),
             url: zerothVehiclePhoto.url,
         });
         /*
             Current order
              0   1   2   3   4
              1   0   2 
-            64  96  128
         */
 
         const fifthResponse = await app.inject({
@@ -1833,14 +2087,13 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         expect(fifthResponse.statusCode).toBe(200);
         expect(fifthResponse.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 192,
+            position: POSITION_OFFSET + POSITION_GAP,
             url: firstVehiclePhoto.url,
         });
         /*
             Current order
              0   1   2   3   4
              0   2   1
-            96 128 192
         */
 
         const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
@@ -1853,9 +2106,22 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 96 },
-            { uuid: secondVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 192 },
+            {
+                uuid: zerothVehiclePhoto.uuid,
+                position:
+                    POSITION_OFFSET -
+                    POSITION_GAP +
+                    Math.floor(
+                        Math.abs(
+                            POSITION_OFFSET - POSITION_GAP - POSITION_OFFSET,
+                        ) / 2,
+                    ),
+            },
+            { uuid: secondVehiclePhoto.uuid, position: POSITION_OFFSET },
+            {
+                uuid: firstVehiclePhoto.uuid,
+                position: POSITION_OFFSET + POSITION_GAP,
+            },
         ];
         expect(vehiclePhotos.length).toBe(3);
         expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
@@ -1886,21 +2152,14 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(200);
         expect(response.json()).toMatchObject({
             uuid: firstVehiclePhoto.uuid,
-            position: 256,
+            position: baseCorrectOrder[1].position,
             url: firstVehiclePhoto.url,
         });
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check for not existing vehicle", async () => {
@@ -1930,17 +2189,10 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(404);
         expect(response.json().message).toEqual("Invalid vehicle uuid");
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check for not existing photo", async () => {
@@ -1970,17 +2222,10 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(404);
         expect(response.json().message).toEqual("Invalid vehicle photo uuid");
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should not update if rental manager is not logged in", async () => {
@@ -2006,17 +2251,10 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(401);
         expect(response.json().message).toEqual("Not authenticated");
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if currently logged in rental manager has rights to update vehicle photo", async () => {
@@ -2044,19 +2282,12 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(403);
         expect(response.json().message).toEqual(
             "Not authorized to maintain this vehicle",
         );
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if vehicleUuid param is a valid uuid", async () => {
@@ -2084,19 +2315,12 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
             'params/vehicleUuid must match format "uuid"',
         );
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if photoUuid param is a valid uuid", async () => {
@@ -2124,19 +2348,12 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
             'params/photoUuid must match format "uuid"',
         );
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if body is present", async () => {
@@ -2157,17 +2374,10 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual("body/0 must be object");
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if position value is non negative", async () => {
@@ -2195,17 +2405,10 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual("body/0/value must be >= 0");
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if position value is not bigger than index of last vehicle photo", async () => {
@@ -2233,17 +2436,10 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual("body/0/value must be <= 4");
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if body operation property is replace", async () => {
@@ -2271,19 +2467,12 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
             "body/0/op must be equal to constant",
         );
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if body path property is position", async () => {
@@ -2311,19 +2500,12 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
             "body/0/path must be equal to constant",
         );
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if body path property has correct format", async () => {
@@ -2351,19 +2533,12 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
             "body/0/path must be equal to constant",
         );
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 
     test("should check if body has only one instruction", async () => {
@@ -2404,13 +2579,6 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             uuid: p.uuid,
             position: p.position,
         }));
-        const correctOrder = [
-            { uuid: zerothVehiclePhoto.uuid, position: 128 },
-            { uuid: firstVehiclePhoto.uuid, position: 256 },
-            { uuid: secondVehiclePhoto.uuid, position: 384 },
-            { uuid: thirdVehiclePhoto.uuid, position: 512 },
-            { uuid: fourthVehiclePhoto.uuid, position: 640 },
-        ];
         expect(firstResponse.statusCode).toBe(400);
         expect(firstResponse.json().message).toEqual(
             "body must NOT have fewer than 1 items",
@@ -2420,7 +2588,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             "body must NOT have more than 1 items",
         );
         expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(correctOrder);
+        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
 });
 
