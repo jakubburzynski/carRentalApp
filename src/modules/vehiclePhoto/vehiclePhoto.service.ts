@@ -143,10 +143,10 @@ export async function updateVehiclePhotoPosition(
     let position: number;
     if (newIndex === 0) {
         const next = vehiclePhotos[newIndex];
-        position = next.position - Math.floor(next.position / 2);
+        position = next.position - POSITION_GAP;
     } else if (newIndex === vehiclePhotos.length - 1) {
         const prev = vehiclePhotos[newIndex];
-        position = prev.position + Math.floor(prev.position / 2);
+        position = prev.position + POSITION_GAP;
     } else if (newIndex > currentIndex) {
         const prev = vehiclePhotos[newIndex];
         const next = vehiclePhotos[newIndex + 1];
