@@ -60,9 +60,12 @@ export async function uploadVehiclePhoto(
     const s3Region = await s3.config.region();
     const photoUrl = `https://s3.${s3Region}.amazonaws.com/${s3BucketName}/${fileName}`;
 
-    const vehiclePhotoCount = await prisma.vehiclePhoto.count({
+    const lastVehiclePhoto = await prisma.vehiclePhoto.findFirst({
         where: {
             vehicleId: vehicle.id,
+        },
+        orderBy: {
+            position: "desc",
         },
     });
 
@@ -70,7 +73,9 @@ export async function uploadVehiclePhoto(
         const createdVehiclePhoto = await tx.vehiclePhoto.create({
             data: {
                 uuid: photoEntityUuid,
-                position: POSITION_GAP * vehiclePhotoCount + POSITION_OFFSET,
+                position: lastVehiclePhoto
+                    ? lastVehiclePhoto.position + POSITION_GAP
+                    : POSITION_OFFSET,
                 url: photoUrl,
                 vehicle: {
                     connect: {
