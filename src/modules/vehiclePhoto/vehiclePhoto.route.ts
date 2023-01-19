@@ -21,6 +21,7 @@ import {
     uploadVehiclePhoto,
 } from "./vehiclePhoto.service";
 import isFastifyError from "../../utils/isFastifyError.util";
+import { ProcessingException } from "../../utils/processingException.util";
 
 export default async function vehiclePhotoRoutes(server: FastifyInstance) {
     server.post<{
@@ -38,9 +39,10 @@ export default async function vehiclePhotoRoutes(server: FastifyInstance) {
         },
         async (request, reply) => {
             if (!request.isMultipart()) {
-                return reply.status(415).send({
-                    message: "Request content type is not multipart",
-                });
+                throw new ProcessingException(
+                    415,
+                    "Request content type is not multipart",
+                );
             }
 
             let photo: MultipartFile | undefined;
@@ -54,25 +56,24 @@ export default async function vehiclePhotoRoutes(server: FastifyInstance) {
                 });
             } catch (err) {
                 if (isFastifyError(err) && err.code === "FST_FIELDS_LIMIT") {
-                    return reply.status(400).send({
-                        message: "Only allowed field type is photo",
-                    });
+                    throw new ProcessingException(
+                        400,
+                        "Only allowed field type is photo",
+                    );
                 }
 
                 throw err;
             }
 
             if (!photo) {
-                return reply.status(400).send({
-                    message: "No vehicle photo uploaded",
-                });
+                throw new ProcessingException(400, "No vehicle photo uploaded");
             }
 
             if (photo.fieldname !== "photo") {
-                return reply.status(422).send({
-                    message:
-                        "Vehicle photo should be attached to the 'photo' field",
-                });
+                throw new ProcessingException(
+                    422,
+                    "Vehicle photo should be attached to the 'photo' field",
+                );
             }
 
             const vehiclePhoto = await uploadVehiclePhoto(

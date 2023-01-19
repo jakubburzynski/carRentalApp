@@ -6,6 +6,7 @@ import {
     postLoginRentalManagerResponse,
 } from "./auth.schema";
 import { findRentalManagerByLoginCredentials } from "../rentalManager/rentalManager.service";
+import { ProcessingException } from "../../utils/processingException.util";
 
 export default async function authRoutes(server: FastifyInstance) {
     server.post<{ Body: PostLoginRentalManagerBody }>(
@@ -29,9 +30,10 @@ export default async function authRoutes(server: FastifyInstance) {
             );
 
             if (!rentalManager.active) {
-                return reply
-                    .status(409)
-                    .send({ message: "Rental manager account not activated" });
+                throw new ProcessingException(
+                    409,
+                    "Rental manager account not activated",
+                );
             }
             request.session.authenticated = true;
             request.session.rentalManager = {
