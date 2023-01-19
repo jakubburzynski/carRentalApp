@@ -23,7 +23,7 @@ describe("POST /api/v1/auth/sessions", () => {
     let rentalManager: RentalManager;
     let memoryStoreSetSpy: SinonSpiedMember<MemoryStore["set"]>;
     let findRentalManagerByLoginCredentialsSpy: SinonSpiedMember<
-        typeof rentalManagerService["findRentalManagerByLoginCredentials"]
+        (typeof rentalManagerService)["findRentalManagerByLoginCredentials"]
     >;
 
     const examplePassword = "Q2Fz Zj{d";
