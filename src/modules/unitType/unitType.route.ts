@@ -1,17 +1,14 @@
-import { FastifyInstance } from "fastify";
-
-import { getAllUnitTypesResponse } from "./unitType.schema";
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
+import { getAllUnitTypesSchema } from "./unitType.schema";
 import { findAllUnitTypes } from "./unitType.service";
 
-export default async function unitTypeRoutes(server: FastifyInstance) {
+export default async function unitTypeRoutes(
+    server: FastifyInstanceWithTypebox,
+) {
     server.get(
         "/",
         {
-            schema: {
-                response: {
-                    200: getAllUnitTypesResponse,
-                },
-            },
+            schema: getAllUnitTypesSchema,
         },
         async (request, reply) => {
             const unitTypes = await findAllUnitTypes();

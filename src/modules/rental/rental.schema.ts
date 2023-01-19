@@ -1,15 +1,16 @@
-import { Static, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
-export const postCreateRentalBody = Type.Object({
-    name: Type.String({ minLength: 3 }),
-    unitTypeUuid: Type.String({ format: "uuid" }),
-});
+import { FastifyValidationSchema } from "../../loaders/fastify";
 
-export type PostCreateRentalBody = Static<typeof postCreateRentalBody>;
-
-export const postCreateRentalResponse = Type.Object({
-    uuid: Type.String({ format: "uuid" }),
-    name: Type.String(),
-});
-
-export type PostCreateRentalResponse = Static<typeof postCreateRentalResponse>;
+export const postCreateRentalSchema = {
+    body: Type.Object({
+        name: Type.String({ minLength: 3 }),
+        unitTypeUuid: Type.String({ format: "uuid" }),
+    }),
+    response: {
+        201: Type.Object({
+            uuid: Type.String({ format: "uuid" }),
+            name: Type.String(),
+        }),
+    },
+} satisfies FastifyValidationSchema;

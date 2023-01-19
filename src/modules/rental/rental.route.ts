@@ -1,22 +1,12 @@
-import { FastifyInstance } from "fastify";
-
-import {
-    PostCreateRentalBody,
-    postCreateRentalBody,
-    postCreateRentalResponse,
-} from "./rental.schema";
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
+import { postCreateRentalSchema } from "./rental.schema";
 import { createRental } from "./rental.service";
 
-export default async function rentalRoutes(server: FastifyInstance) {
-    server.post<{ Body: PostCreateRentalBody }>(
+export default async function rentalRoutes(server: FastifyInstanceWithTypebox) {
+    server.post(
         "/",
         {
-            schema: {
-                body: postCreateRentalBody,
-                response: {
-                    201: postCreateRentalResponse,
-                },
-            },
+            schema: postCreateRentalSchema,
         },
         async (request, reply) => {
             const rental = await createRental({

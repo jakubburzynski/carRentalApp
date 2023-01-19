@@ -1,34 +1,20 @@
-import { FastifyInstance } from "fastify";
-
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
 import {
-    patchRentalManagerBody,
-    PatchRentalManagerBody,
-    patchRentalManagerParams,
-    PatchRentalManagerParams,
-    patchRentalManagerQuery,
-    PatchRentalManagerQuery,
-    patchRentalManagerResponse,
-    PostRegisterRentalManagerBody,
-    postRegisterRentalManagerBody,
-    postRegisterRentalManagerResponse,
+    patchRentalManagerSchema,
+    postRegisterRentalManagerSchema,
 } from "./rentalManager.schema";
 import {
     activateRentalManager,
     registerRentalManager,
 } from "./rentalManager.service";
 
-export default async function rentalManagerRoutes(server: FastifyInstance) {
-    server.post<{
-        Body: PostRegisterRentalManagerBody;
-    }>(
+export default async function rentalManagerRoutes(
+    server: FastifyInstanceWithTypebox,
+) {
+    server.post(
         "/",
         {
-            schema: {
-                body: postRegisterRentalManagerBody,
-                response: {
-                    201: postRegisterRentalManagerResponse,
-                },
-            },
+            schema: postRegisterRentalManagerSchema,
         },
         async (request, reply) => {
             const rentalManager = await registerRentalManager({
@@ -41,21 +27,10 @@ export default async function rentalManagerRoutes(server: FastifyInstance) {
         },
     );
 
-    server.patch<{
-        Body: PatchRentalManagerBody;
-        Params: PatchRentalManagerParams;
-        Querystring: PatchRentalManagerQuery;
-    }>(
+    server.patch(
         "/:uuid",
         {
-            schema: {
-                body: patchRentalManagerBody,
-                params: patchRentalManagerParams,
-                querystring: patchRentalManagerQuery,
-                response: {
-                    204: patchRentalManagerResponse,
-                },
-            },
+            schema: patchRentalManagerSchema,
         },
         async (request, reply) => {
             await activateRentalManager(

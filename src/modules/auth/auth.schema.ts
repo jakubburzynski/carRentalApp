@@ -1,16 +1,13 @@
-import { Static, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
-export const postLoginRentalManagerBody = Type.Object({
-    email: Type.String({ format: "email" }),
-    password: Type.String({ minLength: 1 }),
-});
+import { FastifyValidationSchema } from "../../loaders/fastify";
 
-export type PostLoginRentalManagerBody = Static<
-    typeof postLoginRentalManagerBody
->;
-
-export const postLoginRentalManagerResponse = Type.Null();
-
-export type PostLoginRentalManagerResponse = Static<
-    typeof postLoginRentalManagerResponse
->;
+export const postLoginRentalManagerSchema = {
+    body: Type.Object({
+        email: Type.String({ format: "email" }),
+        password: Type.String({ minLength: 1 }),
+    }),
+    response: {
+        201: Type.Null(),
+    },
+} satisfies FastifyValidationSchema;

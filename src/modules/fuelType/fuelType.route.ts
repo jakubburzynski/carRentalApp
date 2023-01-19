@@ -1,17 +1,14 @@
-import { FastifyInstance } from "fastify";
-
-import { getAllFuelTypesResponse } from "./fuelType.schema";
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
+import { getAllFuelTypesSchema } from "./fuelType.schema";
 import { findAllFuelTypes } from "./fuelType.service";
 
-export default async function fuelTypeRoutes(server: FastifyInstance) {
+export default async function fuelTypeRoutes(
+    server: FastifyInstanceWithTypebox,
+) {
     server.get(
         "/",
         {
-            schema: {
-                response: {
-                    200: getAllFuelTypesResponse,
-                },
-            },
+            schema: getAllFuelTypesSchema,
         },
         async (request, reply) => {
             const fuelTypes = await findAllFuelTypes();

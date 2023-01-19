@@ -1,23 +1,13 @@
-import { FastifyInstance } from "fastify";
-
-import {
-    PostLoginRentalManagerBody,
-    postLoginRentalManagerBody,
-    postLoginRentalManagerResponse,
-} from "./auth.schema";
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
+import { postLoginRentalManagerSchema } from "./auth.schema";
 import { findRentalManagerByLoginCredentials } from "../rentalManager/rentalManager.service";
 import { ProcessingException } from "../../utils/processingException.util";
 
-export default async function authRoutes(server: FastifyInstance) {
-    server.post<{ Body: PostLoginRentalManagerBody }>(
+export default async function authRoutes(server: FastifyInstanceWithTypebox) {
+    server.post(
         "/sessions",
         {
-            schema: {
-                body: postLoginRentalManagerBody,
-                response: {
-                    200: postLoginRentalManagerResponse,
-                },
-            },
+            schema: postLoginRentalManagerSchema,
         },
         async (request, reply) => {
             if (request.session.authenticated === true) {

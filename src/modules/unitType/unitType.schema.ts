@@ -1,11 +1,15 @@
 import { UnitTypeEnum } from "@prisma/client";
-import { Static, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
-export const getAllUnitTypesResponse = Type.Array(
-    Type.Object({
-        uuid: Type.String({ format: "uuid" }),
-        name: Type.Enum(UnitTypeEnum),
-    }),
-);
+import { FastifyValidationSchema } from "../../loaders/fastify";
 
-export type GetAllUnitTypesResponse = Static<typeof getAllUnitTypesResponse>;
+export const getAllUnitTypesSchema = {
+    response: {
+        200: Type.Array(
+            Type.Object({
+                uuid: Type.String({ format: "uuid" }),
+                name: Type.Enum(UnitTypeEnum),
+            }),
+        ),
+    },
+} satisfies FastifyValidationSchema;

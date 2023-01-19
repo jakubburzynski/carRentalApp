@@ -1,19 +1,8 @@
-import { FastifyInstance } from "fastify";
-
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
 import {
-    DeleteVehicleEquipmentParams,
-    deleteVehicleEquipmentParams,
-    deleteVehicleEquipmentResponse,
-    PatchVehicleEquipmentBody,
-    patchVehicleEquipmentBody,
-    PatchVehicleEquipmentParams,
-    patchVehicleEquipmentParams,
-    patchVehicleEquipmentResponse,
-    postCreateVehicleEquipmentBody,
-    PostCreateVehicleEquipmentBody,
-    postCreateVehicleEquipmentParams,
-    PostCreateVehicleEquipmentParams,
-    postCreateVehicleEquipmentResponse,
+    patchVehicleEquipmentSchema,
+    postCreateVehicleEquipmentSchema,
+    deleteVehicleEquipmentSchema,
 } from "./vehicleEquipment.schema";
 import {
     createVehicleEquipment,
@@ -21,21 +10,14 @@ import {
     updateVehicleEquipmentName,
 } from "./vehicleEquipment.service";
 
-export default async function vehicleEquipmentRoutes(server: FastifyInstance) {
-    server.post<{
-        Params: PostCreateVehicleEquipmentParams;
-        Body: PostCreateVehicleEquipmentBody;
-    }>(
+export default async function vehicleEquipmentRoutes(
+    server: FastifyInstanceWithTypebox,
+) {
+    server.post(
         "/:uuid/equipment",
         {
             preHandler: server.auth([server.isLoggedIn]),
-            schema: {
-                params: postCreateVehicleEquipmentParams,
-                body: postCreateVehicleEquipmentBody,
-                response: {
-                    201: postCreateVehicleEquipmentResponse,
-                },
-            },
+            schema: postCreateVehicleEquipmentSchema,
         },
         async (request, reply) => {
             const vehicleEquipment = await createVehicleEquipment({
@@ -47,20 +29,11 @@ export default async function vehicleEquipmentRoutes(server: FastifyInstance) {
         },
     );
 
-    server.patch<{
-        Body: PatchVehicleEquipmentBody;
-        Params: PatchVehicleEquipmentParams;
-    }>(
+    server.patch(
         "/:vehicleUuid/equipment/:equipmentUuid",
         {
             preHandler: server.auth([server.isLoggedIn]),
-            schema: {
-                body: patchVehicleEquipmentBody,
-                params: patchVehicleEquipmentParams,
-                response: {
-                    204: patchVehicleEquipmentResponse,
-                },
-            },
+            schema: patchVehicleEquipmentSchema,
         },
         async (request, reply) => {
             await updateVehicleEquipmentName({
@@ -73,16 +46,11 @@ export default async function vehicleEquipmentRoutes(server: FastifyInstance) {
         },
     );
 
-    server.delete<{ Params: DeleteVehicleEquipmentParams }>(
+    server.delete(
         "/:vehicleUuid/equipment/:equipmentUuid",
         {
             preHandler: server.auth([server.isLoggedIn]),
-            schema: {
-                params: deleteVehicleEquipmentParams,
-                response: {
-                    204: deleteVehicleEquipmentResponse,
-                },
-            },
+            schema: deleteVehicleEquipmentSchema,
         },
         async (request, reply) => {
             await deleteVehicleEquipment({

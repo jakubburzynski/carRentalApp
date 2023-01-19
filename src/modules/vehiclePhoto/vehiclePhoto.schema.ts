@@ -1,51 +1,47 @@
-import { Static, Type } from "@sinclair/typebox";
+import { Type } from "@sinclair/typebox";
 
-export const postUploadVehiclePhotoParams = Type.Object({
-    uuid: Type.String({ format: "uuid" }),
-});
+import { FastifyValidationSchema } from "../../loaders/fastify";
 
-export type PostUploadVehiclePhotoParams = Static<
-    typeof postUploadVehiclePhotoParams
->;
-
-export const postUploadVehiclePhotoResponse = Type.Object({
-    uuid: Type.String({ format: "uuid" }),
-    url: Type.String({ format: "uri" }),
-    position: Type.Integer(),
-});
-
-export const patchUpdateVehiclePhotoPositionBody = Type.Tuple([
-    Type.Object({
-        op: Type.Literal("replace"),
-        path: Type.Literal("/position"),
-        value: Type.Integer({ minimum: 0 }),
+export const postUploadVehiclePhotoSchema = {
+    params: Type.Object({
+        uuid: Type.String({ format: "uuid" }),
     }),
-]);
+    response: {
+        201: Type.Object({
+            uuid: Type.String({ format: "uuid" }),
+            url: Type.String({ format: "uri" }),
+            position: Type.Integer(),
+        }),
+    },
+} satisfies FastifyValidationSchema;
 
-export type PatchUpdateVehiclePhotoPositionBody = Static<
-    typeof patchUpdateVehiclePhotoPositionBody
->;
+export const patchUpdateVehiclePhotoPositionSchema = {
+    body: Type.Tuple([
+        Type.Object({
+            op: Type.Literal("replace"),
+            path: Type.Literal("/position"),
+            value: Type.Integer({ minimum: 0 }),
+        }),
+    ]),
+    params: Type.Object({
+        vehicleUuid: Type.String({ format: "uuid" }),
+        photoUuid: Type.String({ format: "uuid" }),
+    }),
+    response: {
+        200: Type.Object({
+            uuid: Type.String({ format: "uuid" }),
+            url: Type.String({ format: "uri" }),
+            position: Type.Integer(),
+        }),
+    },
+} satisfies FastifyValidationSchema;
 
-export const patchUpdateVehiclePhotoPositionParams = Type.Object({
-    vehicleUuid: Type.String({ format: "uuid" }),
-    photoUuid: Type.String({ format: "uuid" }),
-});
-
-export type PatchUpdateVehiclePhotoPositionParams = Static<
-    typeof patchUpdateVehiclePhotoPositionParams
->;
-
-export const patchUpdateVehiclePhotoPositionResponse = Type.Object({
-    uuid: Type.String({ format: "uuid" }),
-    url: Type.String({ format: "uri" }),
-    position: Type.Integer(),
-});
-
-export const deleteVehiclePhotoParams = Type.Object({
-    vehicleUuid: Type.String({ format: "uuid" }),
-    photoUuid: Type.String({ format: "uuid" }),
-});
-
-export type DeleteVehiclePhotoParams = Static<typeof deleteVehiclePhotoParams>;
-
-export const deleteVehiclePhotoResponse = Type.Null();
+export const deleteVehiclePhotoSchema = {
+    params: Type.Object({
+        vehicleUuid: Type.String({ format: "uuid" }),
+        photoUuid: Type.String({ format: "uuid" }),
+    }),
+    response: {
+        204: Type.Null(),
+    },
+} satisfies FastifyValidationSchema;

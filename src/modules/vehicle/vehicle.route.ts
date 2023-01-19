@@ -1,24 +1,17 @@
-import { FastifyInstance } from "fastify";
 import { Prisma } from "@prisma/client";
 
-import {
-    PostCreateVehicleBody,
-    postCreateVehicleBody,
-    postCreateVehicleResponse,
-} from "./vehicle.schema";
+import { postCreateVehicleSchema } from "./vehicle.schema";
 import { createVehicle } from "./vehicle.service";
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
 
-export default async function vehicleRoutes(server: FastifyInstance) {
-    server.post<{ Body: PostCreateVehicleBody }>(
+export default async function vehicleRoutes(
+    server: FastifyInstanceWithTypebox,
+) {
+    server.post(
         "/",
         {
             preHandler: server.auth([server.isLoggedIn]),
-            schema: {
-                body: postCreateVehicleBody,
-                response: {
-                    201: postCreateVehicleResponse,
-                },
-            },
+            schema: postCreateVehicleSchema,
         },
         async (request, reply) => {
             const vehicle = await createVehicle({

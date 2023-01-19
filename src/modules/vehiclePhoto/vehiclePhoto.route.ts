@@ -1,20 +1,6 @@
-import { FastifyInstance } from "fastify";
 import { MultipartFile } from "@fastify/multipart";
 import bytes from "bytes";
 
-import {
-    deleteVehiclePhotoParams,
-    DeleteVehiclePhotoParams,
-    deleteVehiclePhotoResponse,
-    patchUpdateVehiclePhotoPositionBody,
-    PatchUpdateVehiclePhotoPositionBody,
-    patchUpdateVehiclePhotoPositionParams,
-    PatchUpdateVehiclePhotoPositionParams,
-    patchUpdateVehiclePhotoPositionResponse,
-    postUploadVehiclePhotoParams,
-    PostUploadVehiclePhotoParams,
-    postUploadVehiclePhotoResponse,
-} from "./vehiclePhoto.schema";
 import {
     deleteVehiclePhoto,
     updateVehiclePhotoPosition,
@@ -22,20 +8,21 @@ import {
 } from "./vehiclePhoto.service";
 import isFastifyError from "../../utils/isFastifyError.util";
 import { ProcessingException } from "../../utils/processingException.util";
+import { FastifyInstanceWithTypebox } from "../../loaders/fastify";
+import {
+    patchUpdateVehiclePhotoPositionSchema,
+    postUploadVehiclePhotoSchema,
+    deleteVehiclePhotoSchema,
+} from "./vehiclePhoto.schema";
 
-export default async function vehiclePhotoRoutes(server: FastifyInstance) {
-    server.post<{
-        Params: PostUploadVehiclePhotoParams;
-    }>(
+export default async function vehiclePhotoRoutes(
+    server: FastifyInstanceWithTypebox,
+) {
+    server.post(
         "/:uuid/photos",
         {
             preHandler: server.auth([server.isLoggedIn]),
-            schema: {
-                params: postUploadVehiclePhotoParams,
-                response: {
-                    201: postUploadVehiclePhotoResponse,
-                },
-            },
+            schema: postUploadVehiclePhotoSchema,
         },
         async (request, reply) => {
             if (!request.isMultipart()) {
@@ -85,20 +72,11 @@ export default async function vehiclePhotoRoutes(server: FastifyInstance) {
         },
     );
 
-    server.patch<{
-        Body: PatchUpdateVehiclePhotoPositionBody;
-        Params: PatchUpdateVehiclePhotoPositionParams;
-    }>(
+    server.patch(
         "/:vehicleUuid/photos/:photoUuid",
         {
             preHandler: server.auth([server.isLoggedIn]),
-            schema: {
-                body: patchUpdateVehiclePhotoPositionBody,
-                params: patchUpdateVehiclePhotoPositionParams,
-                response: {
-                    200: patchUpdateVehiclePhotoPositionResponse,
-                },
-            },
+            schema: patchUpdateVehiclePhotoPositionSchema,
         },
         async (request, reply) => {
             const updatedPhoto = await updateVehiclePhotoPosition(
@@ -111,16 +89,11 @@ export default async function vehiclePhotoRoutes(server: FastifyInstance) {
         },
     );
 
-    server.delete<{ Params: DeleteVehiclePhotoParams }>(
+    server.delete(
         "/:vehicleUuid/photos/:photoUuid",
         {
             preHandler: server.auth([server.isLoggedIn]),
-            schema: {
-                params: deleteVehiclePhotoParams,
-                response: {
-                    204: deleteVehiclePhotoResponse,
-                },
-            },
+            schema: deleteVehiclePhotoSchema,
         },
         async (request, reply) => {
             await deleteVehiclePhoto(
