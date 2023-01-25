@@ -267,7 +267,7 @@ describe("POST /api/v1/auth/sessions", () => {
             method: "POST",
             url: "/api/v1/auth/sessions",
             payload: {
-                email: faker.random.word(),
+                email: faker.internet.email(),
             },
             cookies: undefined,
         });
