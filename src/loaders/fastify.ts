@@ -7,7 +7,7 @@ import fastifySession from "@fastify/session";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyAuth, { FastifyAuthFunction } from "@fastify/auth";
 import { S3Client } from "@aws-sdk/client-s3";
-import { TArray, TNull, TObject, TTuple } from "@sinclair/typebox";
+import { TArray, TNull, TObject, TTuple, TUnion } from "@sinclair/typebox";
 
 import envPlugin, { EnvConfig } from "./env";
 import prismaPlugin from "./prisma";
@@ -89,7 +89,7 @@ export type FastifyInstanceWithTypebox = Awaited<
     ReturnType<typeof createFastifyServer>
 >;
 export type FastifyValidationSchema = {
-    body?: TObject | TTuple | TArray;
+    body?: TObject | TUnion;
     params?: TObject;
     querystring?: TObject;
     headers?: TObject;
