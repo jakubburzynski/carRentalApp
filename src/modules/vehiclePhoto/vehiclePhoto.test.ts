@@ -1015,13 +1015,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${secondVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
+            payload: { position: 3 },
             cookies: {
                 sessionId,
             },
@@ -1078,13 +1072,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 2,
-                },
-            ],
+            payload: { position: 2 },
             cookies: {
                 sessionId,
             },
@@ -1144,13 +1132,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
+            payload: { position: 3 },
             cookies: {
                 sessionId,
             },
@@ -1207,13 +1189,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${thirdVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 1,
-                },
-            ],
+            payload: { position: 1 },
             cookies: {
                 sessionId,
             },
@@ -1267,13 +1243,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1321,13 +1291,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${thirdVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1375,13 +1339,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${thirdVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 4,
-                },
-            ],
+            payload: { position: 4 },
             cookies: {
                 sessionId,
             },
@@ -1429,13 +1387,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 4,
-                },
-            ],
+            payload: { position: 4 },
             cookies: {
                 sessionId,
             },
@@ -1483,13 +1435,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 4,
-                },
-            ],
+            payload: { position: 4 },
             cookies: {
                 sessionId,
             },
@@ -1540,13 +1486,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1604,13 +1544,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 2,
-                },
-            ],
+            payload: { position: 2 },
             cookies: {
                 sessionId,
             },
@@ -1663,13 +1597,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${fourthVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 2,
-                },
-            ],
+            payload: { position: 2 },
             cookies: {
                 sessionId,
             },
@@ -1682,13 +1610,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${secondVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 2,
-                },
-            ],
+            payload: { position: 2 },
             cookies: {
                 sessionId,
             },
@@ -1775,13 +1697,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const firstResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1795,13 +1711,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const secondResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1815,13 +1725,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const thirdResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 1,
-                },
-            ],
+            payload: { position: 1 },
             cookies: {
                 sessionId,
             },
@@ -1835,13 +1739,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const fourthResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1855,13 +1753,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const fifthResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1912,13 +1804,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const firstResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1932,13 +1818,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const secondResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1952,13 +1832,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const thirdResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1972,13 +1846,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const fourthResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -1992,13 +1860,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const fifthResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -2050,13 +1912,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const firstResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 1,
-                },
-            ],
+            payload: { position: 1 },
             cookies: {
                 sessionId,
             },
@@ -2085,13 +1941,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const secondResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${secondVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -2111,13 +1961,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const thirdResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
+            payload: { position: 0 },
             cookies: {
                 sessionId,
             },
@@ -2137,13 +1981,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const fourthResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${zerothVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 1,
-                },
-            ],
+            payload: { position: 1 },
             cookies: {
                 sessionId,
             },
@@ -2169,13 +2007,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const fifthResponse = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 2,
-                },
-            ],
+            payload: { position: 2 },
             cookies: {
                 sessionId,
             },
@@ -2227,13 +2059,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 1,
-                },
-            ],
+            payload: { position: 1 },
             cookies: {
                 sessionId,
             },
@@ -2264,13 +2090,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             url: `/api/v1/vehicles/${faker.datatype.uuid()}/photos/${
                 firstVehiclePhoto.uuid
             }`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
+            payload: { position: 3 },
             cookies: {
                 sessionId,
             },
@@ -2297,13 +2117,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             url: `/api/v1/vehicles/${
                 vehicle.uuid
             }/photos/${faker.datatype.uuid()}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
+            payload: { position: 3 },
             cookies: {
                 sessionId,
             },
@@ -2328,13 +2142,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
+            payload: { position: 3 },
             cookies: undefined,
         });
 
@@ -2357,13 +2165,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
+            payload: { position: 3 },
             cookies: {
                 sessionId: secondSessionId,
             },
@@ -2390,13 +2192,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/123/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
+            payload: { position: 3 },
             cookies: {
                 sessionId,
             },
@@ -2423,13 +2219,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/123`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 1,
-                },
-            ],
+            payload: { position: 1 },
             cookies: {
                 sessionId,
             },
@@ -2471,7 +2261,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("body/0 must be object");
+        expect(response.json().message).toEqual("body must be object");
         expect(vehiclePhotos.length).toBe(5);
         expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
@@ -2480,13 +2270,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: -1,
-                },
-            ],
+            payload: { position: -1 },
             cookies: {
                 sessionId,
             },
@@ -2502,7 +2286,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("body/0/value must be >= 0");
+        expect(response.json().message).toEqual("body/position must be >= 0");
         expect(vehiclePhotos.length).toBe(5);
         expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });
@@ -2511,13 +2295,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 5,
-                },
-            ],
+            payload: { position: 5 },
             cookies: {
                 sessionId,
             },
@@ -2533,156 +2311,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/photos/:photoUuid", () => {
             position: p.position,
         }));
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("body/0/value must be <= 4");
-        expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
-    });
-
-    test("should check if body operation property is replace", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "copy",
-                    path: "/position",
-                    value: 3,
-                },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
-            orderBy: {
-                position: "asc",
-            },
-        });
-        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
-            uuid: p.uuid,
-            position: p.position,
-        }));
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/op must be equal to constant",
-        );
-        expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
-    });
-
-    test("should check if body path property is position", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/uuid",
-                    value: 3,
-                },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
-            orderBy: {
-                position: "asc",
-            },
-        });
-        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
-            uuid: p.uuid,
-            position: p.position,
-        }));
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/path must be equal to constant",
-        );
-        expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
-    });
-
-    test("should check if body path property has correct format", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "position",
-                    value: 3,
-                },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
-            orderBy: {
-                position: "asc",
-            },
-        });
-        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
-            uuid: p.uuid,
-            position: p.position,
-        }));
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/path must be equal to constant",
-        );
-        expect(vehiclePhotos.length).toBe(5);
-        expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
-    });
-
-    test("should check if body has only one instruction", async () => {
-        const firstResponse = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [],
-            cookies: {
-                sessionId,
-            },
-        });
-        const secondResponse = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/photos/${firstVehiclePhoto.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 3,
-                },
-                {
-                    op: "replace",
-                    path: "/position",
-                    value: 0,
-                },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehiclePhotos = await app.prisma.vehiclePhoto.findMany({
-            orderBy: {
-                position: "asc",
-            },
-        });
-        const vehiclePhotosUuidPosition = vehiclePhotos.map((p) => ({
-            uuid: p.uuid,
-            position: p.position,
-        }));
-        expect(firstResponse.statusCode).toBe(400);
-        expect(firstResponse.json().message).toEqual(
-            "body must NOT have fewer than 1 items",
-        );
-        expect(secondResponse.statusCode).toBe(400);
-        expect(secondResponse.json().message).toEqual(
-            "body must NOT have more than 1 items",
-        );
+        expect(response.json().message).toEqual("body/position must be <= 4");
         expect(vehiclePhotos.length).toBe(5);
         expect(vehiclePhotosUuidPosition).toEqual(baseCorrectOrder);
     });

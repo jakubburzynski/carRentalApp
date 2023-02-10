@@ -141,7 +141,7 @@ export async function updateVehiclePhotoPosition(
     if (newIndex >= vehiclePhotos.length) {
         throw new ProcessingException(
             400,
-            `body/0/value must be <= ${vehiclePhotos.length - 1}`,
+            `body/position must be <= ${vehiclePhotos.length - 1}`,
         );
     }
 

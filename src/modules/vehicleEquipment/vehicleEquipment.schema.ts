@@ -18,13 +18,9 @@ export const postCreateVehicleEquipmentSchema = {
 } satisfies FastifyValidationSchema;
 
 export const patchVehicleEquipmentSchema = {
-    body: Type.Tuple([
-        Type.Object({
-            op: Type.Literal("replace"),
-            path: Type.Literal("/name"),
-            value: Type.String({ minLength: 2 }),
-        }),
-    ]),
+    body: Type.Object({
+        name: Type.String({ minLength: 2 }),
+    }),
     params: Type.Object({
         vehicleUuid: Type.String({ format: "uuid" }),
         equipmentUuid: Type.String({ format: "uuid" }),

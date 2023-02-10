@@ -20,13 +20,9 @@ export const postRegisterRentalManagerSchema = {
 } satisfies FastifyValidationSchema;
 
 export const patchRentalManagerSchema = {
-    body: Type.Tuple([
-        Type.Object({
-            op: Type.Literal("replace"),
-            path: Type.Literal("/active"),
-            value: Type.Literal(true),
-        }),
-    ]),
+    body: Type.Object({
+        active: Type.Literal(true),
+    }),
     params: Type.Object({
         uuid: Type.String({ format: "uuid" }),
     }),

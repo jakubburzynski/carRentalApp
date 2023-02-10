@@ -37,7 +37,7 @@ export default async function vehicleEquipmentRoutes(
         },
         async (request, reply) => {
             await updateVehicleEquipmentName({
-                name: request.body[0].value,
+                name: request.body.name,
                 equipmentUuid: request.params.equipmentUuid,
                 vehicleUuid: request.params.vehicleUuid,
                 rentalUuid: request.session.rental.uuid,

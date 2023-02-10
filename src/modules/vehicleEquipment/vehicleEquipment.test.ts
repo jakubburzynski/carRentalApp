@@ -279,13 +279,9 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => {
     let equipment: VehicleEquipment;
 
     const examplePassword = "Q2Fz Zj{d";
-    const payload = [
-        {
-            op: "replace",
-            path: "/name",
-            value: faker.commerce.product(),
-        },
-    ];
+    const payload = {
+        name: faker.commerce.product(),
+    };
 
     beforeEach(async () => {
         equipment = await app.prisma.vehicleEquipment.create({
@@ -425,7 +421,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => {
         expect(response.statusCode).toBe(204);
         expect(response.body).toEqual("");
         expect(vehicleEquipment.length).toBe(1);
-        expect(vehicleEquipment[0].name).toEqual(payload[0].value);
+        expect(vehicleEquipment[0].name).toEqual(payload.name);
         expect(vehicleEquipment[0].name).not.toEqual(equipment.name);
     });
 
@@ -550,16 +546,16 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => {
 
         const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("body/0 must be object");
+        expect(response.json().message).toEqual("body must be object");
         expect(vehicleEquipment.length).toBe(1);
         expect(vehicleEquipment[0].name).toEqual(equipment.name);
     });
 
-    test("should check if body name value is at least 2 char long", async () => {
+    test("should check if new name is at least 2 char long", async () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/vehicles/${vehicle.uuid}/equipment/${equipment.uuid}`,
-            payload: [{ op: "replace", path: "/name", value: "a" }],
+            payload: { name: "a" },
             cookies: {
                 sessionId,
             },
@@ -568,120 +564,7 @@ describe("PATCH /api/v1/vehicles/:vehicleUuid/equipment/:equipmentUuid", () => {
         const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
-            "body/0/value must NOT have fewer than 2 characters",
-        );
-        expect(vehicleEquipment.length).toBe(1);
-        expect(vehicleEquipment[0].name).toEqual(equipment.name);
-    });
-
-    test("should check if body operation property is replace", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/equipment/${equipment.uuid}`,
-            payload: [
-                { op: "copy", path: "/name", value: faker.commerce.product() },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/op must be equal to constant",
-        );
-        expect(vehicleEquipment.length).toBe(1);
-        expect(vehicleEquipment[0].name).toEqual(equipment.name);
-    });
-
-    test("should check if body path property is name", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/equipment/${equipment.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/uuid",
-                    value: faker.commerce.product(),
-                },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/path must be equal to constant",
-        );
-        expect(vehicleEquipment.length).toBe(1);
-        expect(vehicleEquipment[0].name).toEqual(equipment.name);
-    });
-
-    test("should check if body path property has correct format", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/equipment/${equipment.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "name",
-                    value: faker.commerce.product(),
-                },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/path must be equal to constant",
-        );
-        expect(vehicleEquipment.length).toBe(1);
-        expect(vehicleEquipment[0].name).toEqual(equipment.name);
-    });
-
-    test("should check if body has only one instruction", async () => {
-        const firstResponse = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/equipment/${equipment.uuid}`,
-            payload: [
-                {
-                    op: "replace",
-                    path: "/name",
-                    value: faker.commerce.product(),
-                },
-                {
-                    op: "replace",
-                    path: "/name",
-                    value: faker.commerce.product(),
-                },
-            ],
-            cookies: {
-                sessionId,
-            },
-        });
-        const secondResponse = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/vehicles/${vehicle.uuid}/equipment/${equipment.uuid}`,
-            payload: [],
-            cookies: {
-                sessionId,
-            },
-        });
-
-        const vehicleEquipment = await app.prisma.vehicleEquipment.findMany();
-        expect(firstResponse.statusCode).toBe(400);
-        expect(firstResponse.json().message).toEqual(
-            "body must NOT have more than 1 items",
-        );
-        expect(secondResponse.statusCode).toBe(400);
-        expect(secondResponse.json().message).toEqual(
-            "body must NOT have fewer than 1 items",
+            "body/name must NOT have fewer than 2 characters",
         );
         expect(vehicleEquipment.length).toBe(1);
         expect(vehicleEquipment[0].name).toEqual(equipment.name);

@@ -83,7 +83,7 @@ export default async function vehiclePhotoRoutes(
                 request.params.vehicleUuid,
                 request.params.photoUuid,
                 request.session.rental.uuid,
-                request.body[0].value,
+                request.body.position,
             );
             return reply.status(200).send(updatedPhoto);
         },

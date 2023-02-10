@@ -16,13 +16,9 @@ export const postUploadVehiclePhotoSchema = {
 } satisfies FastifyValidationSchema;
 
 export const patchUpdateVehiclePhotoPositionSchema = {
-    body: Type.Tuple([
-        Type.Object({
-            op: Type.Literal("replace"),
-            path: Type.Literal("/position"),
-            value: Type.Integer({ minimum: 0 }),
-        }),
-    ]),
+    body: Type.Object({
+        position: Type.Integer({ minimum: 0 }),
+    }),
     params: Type.Object({
         vehicleUuid: Type.String({ format: "uuid" }),
         photoUuid: Type.String({ format: "uuid" }),

@@ -402,7 +402,7 @@ describe("PATCH /api/v1/rental-managers/:uuid", () => {
     let mailSendStub: SinonStubbedMember<typeof MailingService.prototype.send>;
 
     const fakeDate = new Date("2022-01-02T01:02:03Z");
-    const payload = [{ op: "replace", path: "/active", value: true }];
+    const payload = { active: true };
 
     const getLongFirstName = (): string => {
         const possibleName = faker.name.firstName();
@@ -622,7 +622,7 @@ describe("PATCH /api/v1/rental-managers/:uuid", () => {
         });
 
         expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual("body/0 must be object");
+        expect(response.json().message).toEqual("body must be object");
         expect(mailSendStub.notCalled).toBe(true);
     });
 
@@ -630,80 +630,12 @@ describe("PATCH /api/v1/rental-managers/:uuid", () => {
         const response = await app.inject({
             method: "PATCH",
             url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
-            payload: [{ op: "replace", path: "/active", value: false }],
+            payload: { active: false },
         });
 
         expect(response.statusCode).toBe(400);
         expect(response.json().message).toEqual(
-            "body/0/value must be equal to constant",
-        );
-        expect(mailSendStub.notCalled).toBe(true);
-    });
-
-    test("should check if body operation property is replace", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
-            payload: [{ op: "copy", path: "/active", value: true }],
-        });
-
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/op must be equal to constant",
-        );
-        expect(mailSendStub.notCalled).toBe(true);
-    });
-
-    test("should check if body path property is active", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
-            payload: [{ op: "replace", path: "/email", value: true }],
-        });
-
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/path must be equal to constant",
-        );
-        expect(mailSendStub.notCalled).toBe(true);
-    });
-
-    test("should check if body path property has correct format", async () => {
-        const response = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
-            payload: [{ op: "replace", path: "active", value: true }],
-        });
-
-        expect(response.statusCode).toBe(400);
-        expect(response.json().message).toEqual(
-            "body/0/path must be equal to constant",
-        );
-        expect(mailSendStub.notCalled).toBe(true);
-    });
-
-    test("should check if body has only one instruction", async () => {
-        const firstResponse = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
-            payload: [
-                { op: "replace", path: "/active", value: true },
-                { op: "replace", path: "/active", value: true },
-            ],
-        });
-        const secondResponse = await app.inject({
-            method: "PATCH",
-            url: `/api/v1/rental-managers/${rentalManager.uuid}?token=${rentalManager.activationToken}`,
-            payload: [],
-        });
-
-        expect(firstResponse.statusCode).toBe(400);
-        expect(firstResponse.json().message).toEqual(
-            "body must NOT have more than 1 items",
-        );
-        expect(secondResponse.statusCode).toBe(400);
-        expect(secondResponse.json().message).toEqual(
-            "body must NOT have fewer than 1 items",
+            "body/active must be equal to constant",
         );
         expect(mailSendStub.notCalled).toBe(true);
     });
