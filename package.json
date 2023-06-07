@@ -25,7 +25,7 @@
     },
     "homepage": "https://github.com/jakubburzynski/carRentalApp#readme",
     "dependencies": {
-        "@aws-sdk/client-s3": "^3.209.0",
+        "@aws-sdk/client-s3": "^3.347.1",
         "@fastify/auth": "^4.1.0",
         "@fastify/cookie": "^8.3.0",
         "@fastify/helmet": "^10.1.0",
